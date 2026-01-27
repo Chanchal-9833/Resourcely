@@ -1,0 +1,405 @@
+// import "dart:nativewrappers/_internal/vm/lib/async_patch.dart" hide Timer;
+
+import "package:cloud_firestore/cloud_firestore.dart";
+import "package:firebase_auth/firebase_auth.dart";
+import "package:flutter/foundation.dart";
+import "package:flutter/material.dart";
+import "package:flutter_firebase/FlutterProject/HomePage.dart";
+import "package:flutter_firebase/FlutterProject/SignInPage.dart";
+// import 'package:firebase_auth/firebase_auth.dart';
+import "dart:async";
+
+// import "package:google_sign_in/google_sign_in.dart";
+
+class Signuppage extends StatefulWidget {
+  const Signuppage({super.key});
+
+  @override
+  State<Signuppage> createState() => _SignuppageState();
+}
+
+class _SignuppageState extends State<Signuppage> {
+  final fullname =TextEditingController();
+  final password=TextEditingController();
+  final email=TextEditingController();
+  String? fn_err_msg;
+  String?em_err_msg;
+  String?ps_err_msg;
+  String?college_email;
+  String?pass_ch;
+  bool obsecure=true;
+  bool isloading=false;
+  String? email_exists;
+
+  Future<void> saveUserToFirestore(UserCredential userCredential) async {
+    final user = userCredential.user!;
+    final email=user.email?? "";
+    if (!email.endsWith("@ves.ac.in")) {
+      await FirebaseAuth.instance.signOut();
+      continue_with_google();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Only College email is allowed",style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final userRef =
+    FirebaseFirestore.instance.collection("Users").doc(user.uid);
+
+    final snapshot = await userRef.get();
+
+    if (!snapshot.exists) {
+      await userRef.set({
+        "fullname": user.displayName,
+        "email": user.email,
+        "authProvider": "google",
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed Up SuccessFully!",
+        style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
+        ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
+      print("User Created Successfully.");
+      Timer(Duration(seconds: 2),(){
+        Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
+          return Homepage();
+        }));
+      });
+
+    }
+    else{
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed In SuccessFully!",
+        style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
+        ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
+      // print("User Created Successfully.");
+      Timer(Duration(seconds: 2),(){
+        Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
+          return Homepage();
+        }));
+      });
+
+    }
+  }
+
+  continue_with_google()async{
+    try{
+      GoogleAuthProvider googleAuthProvider=GoogleAuthProvider();
+      googleAuthProvider.setCustomParameters({
+        "prompt":"select_account"
+      });
+      UserCredential userCredential =
+      await FirebaseAuth.instance.signInWithPopup(googleAuthProvider);
+      await saveUserToFirestore(userCredential);
+    }
+    catch(err){
+      print("Google Web Sign-In Error: $err");
+    }
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Resourcely",style:TextStyle(fontSize: 20,fontFamily: "Mono",fontWeight: FontWeight.w500),),
+        backgroundColor: Color(0xFF00796B),
+        foregroundColor: Colors.white,
+      ),
+      body:Container(
+        color:Colors.white,
+        child: Container(
+          padding: EdgeInsets.all(15),
+          margin: EdgeInsets.only(top:80),
+          child: Column(
+            children: [
+              TextField(
+                controller: fullname,
+                  onChanged: (_){
+                  if(fn_err_msg!=null){
+                    setState(() {
+                      fn_err_msg=null;
+                    });
+                  }
+                  },
+                  decoration: InputDecoration(
+                    labelText: "Full Name",
+                    errorText: fn_err_msg,
+                    errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: Colors.red,
+                            width: 3
+                        )
+                    ),
+                    prefixIcon: Icon(Icons.person,color: Colors.grey,),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: Color(0xFF00796B),
+                            width: 3
+                        )
+                    ),
+                    labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                          color: Colors.lightGreen,
+                        width: 3
+                      )
+                    )
+                  ),
+                ),
+              SizedBox(height: 20,),TextField(
+                controller: email,
+                  onChanged: (_){
+                  if(em_err_msg!=null){
+                    setState(() {
+                      em_err_msg=null;
+                    });
+                  }
+                  if(college_email!=null){
+                    setState(() {
+                      college_email=null;
+                    });
+                  }
+                  if(email_exists!=null){
+                    setState(() {
+                      email_exists=null;
+                    });
+                  }
+                  },
+
+                  decoration: InputDecoration(
+                    errorText: em_err_msg!=null ? em_err_msg : college_email,
+                    errorBorder:OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: Colors.red,
+                            width: 3
+                        )) ,
+                      labelText: "Email",
+                      prefixIcon: Icon(Icons.email,color: Colors.grey,),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(
+                              color: Color(0xFF00796B),
+                              width: 3
+                          )),
+                      labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                              color: Colors.lightGreen,
+                              width: 3
+                          )
+                      )
+                  ),
+                ),
+              SizedBox(height: 20,),TextField(
+                onChanged:(_){
+                  if(ps_err_msg!=null){
+                    setState(() {
+                      ps_err_msg=null;
+                    });
+                  }
+                  if(pass_ch!=null){
+                    setState(() {
+                      pass_ch=null;
+                    });
+                  }
+
+                },
+                controller: password,
+                obscureText: obsecure,
+                decoration: InputDecoration(
+                    errorText: ps_err_msg!=null?ps_err_msg :pass_ch,
+                    errorBorder:OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: Colors.red,
+                            width: 3
+                        )) ,
+                    labelText: "Password",
+                    prefixIcon: Icon(Icons.lock,color: Colors.grey,),
+                    suffixIcon: IconButton(onPressed:(){
+                      setState(() {
+                        obsecure=!obsecure;                      });
+                    }, icon: obsecure?Icon(Icons.remove_red_eye,color: Color(0xFF00796B),):Icon(Icons.visibility_off,color: Color(0xFF00796B),),),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(
+                            color: Color(0xFF00796B),
+                            width: 3
+                        )),
+                    labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                            color: Colors.lightGreen,
+                            width: 3
+                        )
+                    )
+                ),
+              ),
+              SizedBox(height: 30,),
+              SizedBox(
+                width:double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async{
+                    String fname=fullname.text.trim();
+                    String pass=password.text.trim();
+                    String c_email=email.text.trim();
+                    if(fname.isEmpty){
+                      setState(() {
+                        fn_err_msg="Fullname Required.";
+                      });
+                      return;
+                    }
+                    if(c_email.isEmpty){
+                      setState(() {
+                        em_err_msg="Email Required.";
+                      });
+                      return;
+                    }
+                    if(pass.isEmpty){
+                      setState(() {
+                        ps_err_msg="Password Required.";
+                      });
+                      return;
+                    }
+                    if(!email.text.endsWith("@ves.ac.in")){
+                      setState(() {
+                        college_email="Only College Email Accepted.";
+                      });
+                      return;
+                    }
+                    if(password.text.length<8){
+                      setState(() {
+                        pass_ch="Password should contain atleast 8 Characters.";
+                      });
+                      return;
+                    }
+                    final check_email=await FirebaseFirestore.instance.collection("Users").where("email",isEqualTo: c_email).get();
+                    if(check_email.docs.isNotEmpty){
+                      email_exists="Email Already Exists.";
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${email_exists}",
+                        style: TextStyle(fontSize: 16,fontFamily: "Mono",color: Colors.white),)
+                        ,backgroundColor: Colors.red,behavior: SnackBarBehavior.floating,),);
+                      return;
+                    }
+                    try{
+
+
+
+                     UserCredential user_cred= await FirebaseAuth.instance.createUserWithEmailAndPassword(email:c_email.toString(), password: pass.toString());
+
+                      await FirebaseFirestore.instance.collection("Users").doc(user_cred.user!.uid).set({
+                        "fullname":fname.toString(),
+                        "email":c_email.toString(),
+                        "SignedUpAt": FieldValue.serverTimestamp(),
+                      });
+                     setState(() {
+                       isloading=true;
+                     });
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed Up SuccessFully!",
+                        style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
+                        ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
+                      print("User Created Successfully.");
+                       Timer(Duration(seconds: 2),(){
+                         Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
+                           return Signinpage();
+                         }));
+                       });
+
+
+                    }on FirebaseAuthException
+                    catch(err){
+                      print("Err Code:${err.code}");
+                      print("Err Message : ${err.message}");
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed Up Failed!",
+                        style: TextStyle(fontSize: 16,fontFamily: "Mono",color: Colors.white),)
+                        ,backgroundColor: Colors.red,behavior: SnackBarBehavior.floating,),);
+                    }
+
+
+                    
+                    //   {
+                    //     "fullname":fname.toString(),
+                    //     "email":c_email.toString(),
+                    //     "password":pass.toString(),
+                    //   }
+                    // );
+
+
+
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00796B),
+                    foregroundColor: Colors.white,
+                    overlayColor: Colors.green,
+                    padding: EdgeInsetsGeometry.all(18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                  ),
+                  child: isloading ?CircularProgressIndicator(color: Colors.white,) :Text(
+                    "Sign Up",
+                    style: TextStyle(
+                      fontFamily: "Mono",
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 15,
+              ),
+              SizedBox(
+                child: Text("Or",style: TextStyle(fontWeight: FontWeight.bold),),
+              ),
+              SizedBox(
+                height: 15,
+              ),
+              SizedBox(
+                width:double.infinity,
+                child: ElevatedButton(style:ButtonStyle(
+                  backgroundColor: WidgetStatePropertyAll(Colors.white),
+                  overlayColor: WidgetStatePropertyAll(Colors.white),
+
+                ),onPressed: (){
+                  continue_with_google();
+                }, child:Row(
+                  children: [
+                    Container(margin:EdgeInsets.only(left:70),child: Image.network("https://tse3.mm.bing.net/th/id/OIP.uBYsSL7JDekYP3VpxWZvYQHaHa?pid=Api&P=0&h=220",height: 50,)),
+                    Container(child: Text("Continue with Google",style: TextStyle(color:Colors.grey,fontFamily: "Mono",fontSize: 18),))
+                  ],
+                )),
+              ),
+              Row(
+                children: [
+                  Container(
+                    margin: EdgeInsets.only(top:15,left:5),
+                    child: Text("Already User? ",style: TextStyle(fontSize: 17,fontFamily: "Mono",),),
+                  ),
+                  InkWell(
+                    onTap: (){
+                      Navigator.pop(context, MaterialPageRoute(builder: (context){
+                        return Signinpage();
+                      }));
+                    },
+                    child: Container( margin: EdgeInsets.only(top:15),
+                        child: Text("Sign In",style: TextStyle(fontSize: 20,fontFamily: "Mono", decoration: TextDecoration.underline,decorationColor: Colors.green,
+                        color:Colors.green))),
+                  ),
+                ],
+              ),
+
+            ],
+          ),
+        ),
+      )
+
+    );
+  }
+}
