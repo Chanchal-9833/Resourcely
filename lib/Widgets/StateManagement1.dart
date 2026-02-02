@@ -20,7 +20,8 @@ class Statemanagement1 extends StatelessWidget {
             builder: (ctx,_,__){
               print("Consumer build");
               return Center(
-                child: Text("${Provider.of<Counterprovider>(ctx,listen: true).getCount()}"),
+                // child: Text("${Provider.of<Counterprovider>(ctx,listen: true).getCount()}"),
+                child:Text("${ctx.watch<Counterprovider>().getCount()}")
               );
     }
 

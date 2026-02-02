@@ -16,5 +16,7 @@ void Decrement(){
   notifyListeners();
 }
 // Get value of count
-int getCount()=>_count;
+int getCount(){
+  return _count;
+}
 }

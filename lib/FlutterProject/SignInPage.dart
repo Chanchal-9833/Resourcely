@@ -174,9 +174,9 @@ class _SigninpageState extends State<Signinpage> {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed In SuccessFully!",
                           style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                           ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                          return Homepage();
-                        }));
+                        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
+                        //   return Homepage();
+                        // }));
                       }on FirebaseAuthException
                       catch(err){
                         print("Err code :${err.code}");
