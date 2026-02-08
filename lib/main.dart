@@ -3,6 +3,7 @@ import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/Email_Signin_Otp.dart";
 import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:flutter_firebase/FlutterProject/PcBookingPage.dart";
+import "package:flutter_firebase/FlutterProject/Res_ProfilePage.dart";
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:flutter_firebase/FlutterProject/SplashPage.dart";
@@ -29,7 +30,7 @@ class Myapp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home:Pcbookingpage(pcnumber: 1),
+      home:Splashpage(),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -7,9 +7,11 @@ import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/foundation.dart";
+import "package:shared_preferences/shared_preferences.dart";
 
 class Signinpage extends StatefulWidget {
-  const Signinpage({super.key});
+  String? username="";
+   Signinpage();
 
   @override
   State<Signinpage> createState() => _SigninpageState();
@@ -174,9 +176,25 @@ class _SigninpageState extends State<Signinpage> {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed In SuccessFully!",
                           style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                           ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
-                        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                        //   return Homepage();
-                        // }));
+
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
+                          return Homepage();
+                        }));
+                        final user = FirebaseAuth.instance.currentUser;
+
+                        final doc = await FirebaseFirestore.instance
+                            .collection("Users")
+                            .doc(user!.uid)
+                            .get();
+
+                        final username = doc["fullname"];
+                        final email=doc["email"];
+                        final prefs = await SharedPreferences.getInstance();
+                        prefs.setString("username", username);
+
+                        final prefss=await SharedPreferences.getInstance();
+                        prefss.setString("email", email ?? c_email);
+                        print("Email Saved ${prefss.getString("email")}");
                       }on FirebaseAuthException
                       catch(err){
                         print("Err code :${err.code}");

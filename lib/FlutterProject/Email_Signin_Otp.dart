@@ -3,10 +3,12 @@
 import "dart:async";
 import "dart:convert";
 
+import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
 import 'package:http/http.dart' as http;
+import "package:shared_preferences/shared_preferences.dart";
 // import "package:firebase_auth/firebase_auth.dart";
 class EmailSigninOtp extends StatefulWidget {
   const EmailSigninOtp({super.key});
@@ -140,11 +142,23 @@ class _EmailSigninOtpState extends State<EmailSigninOtp> {
       headers: {"Content-Type": "application/json"},);
 
       var msg=jsonDecode(response.body);
+      if (msg["success"] == true) {
+        final token = msg["token"];
 
-      if(msg["success"]==true){
+        await FirebaseAuth.instance.signInWithCustomToken(token);
+
+        // 🔥 NOW USER EXISTS
+        final user = FirebaseAuth.instance.currentUser;
+        print("Firebase UID: ${user!.uid}");
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => Homepage()),
+        );
         setState(() {
           isloading=true;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -155,18 +169,33 @@ class _EmailSigninOtpState extends State<EmailSigninOtp> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        // isloading=true;
-
-        // CircularProgressIndicator();
-       Timer(Duration(seconds: 4), (){
-         Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
-           return Homepage();
-         }));
-       });
-       setState(() {
-         isloading=false;
-       });
       }
+
+      // if(msg["success"]==true){
+
+      //   //
+      //   // final prefss=await SharedPreferences.getInstance();
+      //   // prefss.setString("email", email_controller.text.toString().trim() );
+      //   // print("Email Saved ");
+      //   //
+      //   // final snapshot=await FirebaseFirestore.instance.collection("Users").where("email",isEqualTo: email_controller.text.toString().trim()).limit(1).get();
+      //   // if(snapshot.docs.isNotEmpty){
+      //   //   prefss.setString("username", snapshot.docs.first["fullname"]);
+      //   //   print("set fullname ");
+      //   // }
+      //   //
+      //
+      //
+      //   // CircularProgressIndicator();
+      //  Timer(Duration(seconds: 4), (){
+      //    Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
+      //      return Homepage();
+      //    }));
+      //  });
+      //  setState(() {
+      //    isloading=false;
+      //  });
+      // }
       else{
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

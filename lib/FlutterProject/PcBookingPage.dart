@@ -1,18 +1,37 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase/FlutterProject/HomePage.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Pcbookingpage extends StatefulWidget {
   int pcnumber;
-  Pcbookingpage({required this.pcnumber});
+  final String? minBookedTime;
+  final String? maxBookedTime;
+  final Map<String, List<String>> bookingsByDate;
+
+  Pcbookingpage({required this.pcnumber,this.minBookedTime,
+    this.maxBookedTime, required this.bookingsByDate,});
 
   @override
   State<Pcbookingpage> createState() => _PcbookingpageState();
 }
 
 class _PcbookingpageState extends State<Pcbookingpage> {
+  int _timeStringToMinutes(String time) {
+    final dt = DateFormat("h:mm a").parse(time);
+    return dt.hour * 60 + dt.minute;
+  }
+  int? bookedStartMin;
+  int? bookedEndMin;
+
+
+  String otp_email="";
   int membersCount = 1;
   final TextEditingController mcount = TextEditingController();
 
@@ -77,6 +96,24 @@ class _PcbookingpageState extends State<Pcbookingpage> {
     final dynamicStartMin = _isToday
         ? _toMinutes(TimeOfDay.now())
         : 7 * 60 + 30;
+    if (selectedDate != null) {
+      final dateKey = DateFormat('yyyy-MM-dd').format(selectedDate!);
+
+      final slots = widget.bookingsByDate[dateKey];
+
+      if (slots != null) {
+        for (final slot in slots) {
+          final parts = slot.split(",");
+          final start = _timeStringToMinutes(parts[0]);
+          final end   = _timeStringToMinutes(parts[1]);
+
+          if (pickedMin >= start && pickedMin <= end) {
+            return "Selected time overlaps with existing booking";
+          }
+        }
+      }
+    }
+
 
     if (isStart) {
       if (pickedMin < dynamicStartMin) {
@@ -121,10 +158,16 @@ class _PcbookingpageState extends State<Pcbookingpage> {
     mcount.dispose();
     super.dispose();
   }
-@override
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    if (widget.minBookedTime != null &&
+        widget.maxBookedTime != null) {
+      bookedStartMin = _timeStringToMinutes(widget.minBookedTime!);
+      bookedEndMin   = _timeStringToMinutes(widget.maxBookedTime!);
+    }
+
     mname.add(TextEditingController());
     mid.add(TextEditingController());
     mdept.add(TextEditingController());
@@ -164,16 +207,16 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                     membersCount = int.tryParse(value) ?? 1;
                     if(membersCount > 4){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Only 4 Members Allowed At A Time.",style: TextStyle(fontSize: 18,fontFamily: "Mono"),),backgroundColor: Colors.red,behavior: SnackBarBehavior.floating,),);}
 
-                  while(mname.length < membersCount){
-                    mname.add(TextEditingController());
-                    mid.add(TextEditingController());
-                    mdept.add(TextEditingController());
-                  }
-                  while(mname.length > membersCount){
-                    mname.removeLast().dispose();
-                    mdept.removeLast().dispose();
-                    mid.removeLast().dispose();
-                  }
+                    while(mname.length < membersCount){
+                      mname.add(TextEditingController());
+                      mid.add(TextEditingController());
+                      mdept.add(TextEditingController());
+                    }
+                    while(mname.length > membersCount){
+                      mname.removeLast().dispose();
+                      mdept.removeLast().dispose();
+                      mid.removeLast().dispose();
+                    }
 
                     while(mname_err.length < membersCount){
                       mname_err.add(null);
@@ -343,10 +386,10 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                       ),
                     SizedBox(height: 10,),
                     if(selectedDate!=null && startTime!=null && endTime!=null)...[
-                    Container(child: Text("Selected Date - ${DateFormat("yMd").format(selectedDate!)}",style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.w600,fontFamily: "Mono")),),
-                    Container(child: Text("Start Time - ${formatTimeOfDay(startTime!)}",style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.w600,fontFamily: "Mono")),),
-                    Container(child: Text("End Time - ${formatTimeOfDay(endTime!)}",style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.w600,fontFamily: "Mono")),),
-                 ] ],
+                      Container(child: Text("Selected Date - ${DateFormat("yMd").format(selectedDate!)}",style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.w600,fontFamily: "Mono")),),
+                      Container(child: Text("Start Time - ${formatTimeOfDay(startTime!)}",style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.w600,fontFamily: "Mono")),),
+                      Container(child: Text("End Time - ${formatTimeOfDay(endTime!)}",style: TextStyle(color: Color(0xFF00796B), fontWeight: FontWeight.w600,fontFamily: "Mono")),),
+                    ] ],
 
                 ),
 
@@ -381,11 +424,11 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                         SizedBox(height: 10,),
                         TextField(
                           onChanged: (_){
-                           setState(() {
-                             if(mname_err[index]!=null){
-                               mname_err[index]=null;
-                             }
-                           });
+                            setState(() {
+                              if(mname_err[index]!=null){
+                                mname_err[index]=null;
+                              }
+                            });
                           },
                           controller: mname[index],
                           decoration: InputDecoration(
@@ -427,14 +470,14 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                         ),
                         const SizedBox(height: 20),
                         TextField(onChanged: (_){
-                         setState(() {
-                           if(mid_err[index]!=null){
-                             mid_err[index]=null;
-                           }
-                           if(msid_err[index]!=null){
-                             msid_err[index]=null;
-                           }
-                         });
+                          setState(() {
+                            if(mid_err[index]!=null){
+                              mid_err[index]=null;
+                            }
+                            if(msid_err[index]!=null){
+                              msid_err[index]=null;
+                            }
+                          });
                         },
                           controller: mid[index],
                           decoration: InputDecoration(
@@ -541,49 +584,49 @@ class _PcbookingpageState extends State<Pcbookingpage> {
 
                     membersInfo.clear();
                     for(int i=0;i<membersCount;i++){
-                   setState(() {
-                     if(mname[i].text.trim().isEmpty){
-                       mname_err[i]="Member ${i+1} Name Required";
-                       hasError=true;
-                     }
-                     if(mid[i].text.trim().isEmpty){
-                       mid_err[i]="Student Id of Member ${i+1} Required";
-                       hasError=true;
-                     }
-                     if(mid[i].text.trim().length!=7 || !RegExp(r'^\d+$').hasMatch(mid[i].text)){
-                       msid_err[i]="Student Id Must be of 7 Letters and It Must Contain only Numbers";
-                       hasError=true;
-                     }
-                     if(mdept[i].text.trim().isEmpty){
-                       mdept_err[i]="Department Required for Member ${i+1}";
-                       hasError=true;
-                     }
-                     for(int j=0;j<mid.length;j++){
-                       for (int j = i + 1; j < mid.length; j++) {
-                         if (mid[i].text
-                             .trim()
-                             .isNotEmpty &&
-                             mid[i].text.trim() == mid[j].text.trim())
-                       {
-                         mid_err[i]="Duplicate Sid";
-                         mid_err[j]="Duplicate Sid";
-                       }
-                         }
-                     }
+                      setState(() {
+                        if(mname[i].text.trim().isEmpty){
+                          mname_err[i]="Member ${i+1} Name Required";
+                          hasError=true;
+                        }
+                        if(mid[i].text.trim().isEmpty){
+                          mid_err[i]="Student Id of Member ${i+1} Required";
+                          hasError=true;
+                        }
+                        if(mid[i].text.trim().length!=7 || !RegExp(r'^\d+$').hasMatch(mid[i].text)){
+                          msid_err[i]="Student Id Must be of 7 Letters and It Must Contain only Numbers";
+                          hasError=true;
+                        }
+                        if(mdept[i].text.trim().isEmpty){
+                          mdept_err[i]="Department Required for Member ${i+1}";
+                          hasError=true;
+                        }
+                        for(int j=0;j<mid.length;j++){
+                          for (int j = i + 1; j < mid.length; j++) {
+                            if (mid[i].text
+                                .trim()
+                                .isNotEmpty &&
+                                mid[i].text.trim() == mid[j].text.trim())
+                            {
+                              mid_err[i]="Duplicate Sid";
+                              mid_err[j]="Duplicate Sid";
+                            }
+                          }
+                        }
 
-                     if(startTime==null || endTime==null){
-                       timeError="Time Required";
-                       hasError=true;
-                     }
-                     if(selectedDate==null){
-                       dateError="Date Required";
-                       hasError=true;
-                     }
+                        if(startTime==null || endTime==null){
+                          timeError="Time Required";
+                          hasError=true;
+                        }
+                        if(selectedDate==null){
+                          dateError="Date Required";
+                          hasError=true;
+                        }
 
-                   });
+                      });
 
 
-                  }
+                    }
                     if(hasError){
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("All Fields are Required.!",
                         style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
@@ -602,21 +645,87 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                       }
                       await FirebaseFirestore.instance
                           .collection("PcRoom")
-                          .doc("Pc ${widget.pcnumber}")
-                          .update({
+                          .doc("${DateTime.now()}")
+                          .set({
                         "Members": membersCount,
                         "Members_Info": membersInfo,
                         "date": Timestamp.fromDate(selectedDate!),
                         "startTime": startTime!.format(context),
                         "endTime": endTime!.format(context),
                         "status": "booked",
+                        "pcnumber":widget.pcnumber
                       });
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Slot for Pc Booked SuccessFully!",
-                        style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
-                        ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                        return Homepage();
-                      }));
+                      final prefs=await SharedPreferences.getInstance();
+                      String? em=prefs.getString("email");
+                      setState(() {
+                        otp_email=em!;
+                        print(otp_email);
+                      });
+
+                      final url = Uri.parse('http://localhost:8000/user/send-otp');
+                      try {
+                        final response = await http.post(
+                          url,
+                          headers: {"Content-Type": "application/json"},
+                          body: jsonEncode({
+                            "email": otp_email
+                          }),
+                        );
+
+                        print(jsonDecode(response.body));
+                        // Uncomment if you want to parse response
+                        if (response.statusCode == 200) {
+                          final data = jsonDecode(response.body);
+                          print('OTP sent successfully: ${data['msg']}');
+                          showDialog(context: context, builder: (_)=>AlertDialog(
+                            title: Container(child: Icon(Icons.check_circle,color: Colors.green,size: 100,),)
+                            ,
+                            content: Column(children: [
+                              Text("Booking SuccessFull.",style: TextStyle(fontSize: 18,fontWeight: FontWeight.w600),
+                              ),
+                              SizedBox(height: 10,),
+                              Text("Otp has been sent to User's Email. \n      Verify Later at Check-in.",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w400))
+                            ],),
+                            constraints: BoxConstraints(maxHeight: 300,maxWidth: 300,minHeight: 300,minWidth: 300),
+                          ));
+
+                          Timer(Duration(seconds: 5), () {
+                            Navigator.pushReplacement(context,MaterialPageRoute(builder:(context){
+                              return Homepage();
+                            }));
+                          });
+                        } else {
+                          final data = jsonDecode(response.body);
+                          setState(() {
+                          });
+                          print('Error: ${data['message'] ?? 'Unknown error'}');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Failed to send Otp!",
+                                style: TextStyle(fontSize: 16, color: Colors.white,fontFamily: "Mono"),
+                              ),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        print('Error sending OTP: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "Failed to send Otp!",
+                              style: TextStyle(fontSize: 16, color: Colors.white,fontFamily: "Mono"),
+                            ),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+
+
+
                     }
 
                   },
