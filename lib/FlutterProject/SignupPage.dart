@@ -9,6 +9,8 @@ import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 // import 'package:firebase_auth/firebase_auth.dart';
 import "dart:async";
 
+import "package:flutter_firebase/FlutterProject/student_home_page.dart";
+
 // import "package:google_sign_in/google_sign_in.dart";
 
 class Signuppage extends StatefulWidget {
@@ -65,7 +67,7 @@ class _SignuppageState extends State<Signuppage> {
       print("User Created Successfully.");
       Timer(Duration(seconds: 2),(){
         Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
-          return Homepage();
+          return StudentHomePage();
         }));
       });
 

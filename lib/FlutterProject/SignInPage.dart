@@ -1,3 +1,4 @@
+
 import "dart:async";
 
 import "package:flutter/material.dart";
@@ -6,7 +7,9 @@ import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
+import 'navigationBar.dart';
 import "package:flutter/foundation.dart";
+import "package:flutter_firebase/FlutterProject/student_home_page.dart";
 
 class Signinpage extends StatefulWidget {
   const Signinpage({super.key});
@@ -32,7 +35,7 @@ class _SigninpageState extends State<Signinpage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text("Resourcely",style:TextStyle(fontSize: 20,fontFamily: "Mono",fontWeight: FontWeight.w500),),
+          title: Row(children: [CircleAvatar(backgroundImage: AssetImage("Images/Resourcely_logo1.png"),radius: 20,),Text("Resourcely",style:TextStyle(fontSize: 20,fontFamily: "Mono",fontWeight: FontWeight.w500),),],),
           backgroundColor: Color(0xFF00796B),
           foregroundColor: Colors.white,
         ),
@@ -175,7 +178,7 @@ class _SigninpageState extends State<Signinpage> {
                           style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                           ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
                         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                          return Homepage();
+                           return BottomNavigation();
                         }));
                       }on FirebaseAuthException
                       catch(err){
@@ -238,9 +241,9 @@ class _SigninpageState extends State<Signinpage> {
                 SizedBox(
                   width:double.infinity,
                   child: ElevatedButton(style:ButtonStyle(
-                    backgroundColor: WidgetStatePropertyAll(Colors.white),
-                    overlayColor: WidgetStatePropertyAll(Colors.white),
-                    padding: WidgetStatePropertyAll(EdgeInsets.all(15))
+                      backgroundColor: WidgetStatePropertyAll(Colors.white),
+                      overlayColor: WidgetStatePropertyAll(Colors.white),
+                      padding: WidgetStatePropertyAll(EdgeInsets.all(15))
 
                   ),onPressed: (){
                     Navigator.push(context,MaterialPageRoute(builder: (context){
@@ -261,11 +264,11 @@ class _SigninpageState extends State<Signinpage> {
                       child: Text("New User? ",style: TextStyle(fontSize: 17,fontFamily: "Mono",),),
                     ),
                     InkWell(
-                        onTap: (){
-                          Navigator.push(context, MaterialPageRoute(builder: (context){
-                            return Signuppage();
-                          }));
-                        },
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return Signuppage();
+                        }));
+                      },
                       child: Container( margin: EdgeInsets.only(top:15),
                           child: Text("Sign Up",style: TextStyle(fontSize: 20,fontFamily: "Mono",
                               decoration: TextDecoration.underline,decorationColor: Colors.redAccent,

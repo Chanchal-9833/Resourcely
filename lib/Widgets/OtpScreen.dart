@@ -2,7 +2,9 @@ import "dart:math";
 
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
-import "package:flutter_firebase/Widgets/Homepage.dart";
+import "package:flutter_firebase/Widgets/CounterProvider.dart";
+import "package:flutter_firebase/Widgets/TabConcept.dart";
+// import "package:flutter_firebase/Widgets/Homepage.dart";
 
 class Otpscreen extends StatefulWidget {
   String verification_id;
@@ -54,7 +56,7 @@ class _OtpscreenState extends State<Otpscreen> {
                       PhoneAuthCredential Credential=await PhoneAuthProvider.credential(verificationId: widget.verification_id, smsCode:otp.text.toString());
                       FirebaseAuth.instance.signInWithCredential(Credential).then((value){
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return Homepage();
+                          return Tabconcept();
                         }));
                       });
                     }

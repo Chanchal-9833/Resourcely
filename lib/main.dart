@@ -1,12 +1,19 @@
+
 import "package:firebase_core/firebase_core.dart";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/Email_Signin_Otp.dart";
+import "package:flutter_firebase/FlutterProject/HomePage.dart";
+import "package:flutter_firebase/FlutterProject/PcBookingPage.dart";
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:flutter_firebase/FlutterProject/SplashPage.dart";
+import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
+import "package:flutter_firebase/FlutterProject/facility_details_page.dart";
+import "package:flutter_firebase/FlutterProject/student_home_page.dart";
+
 import "package:flutter_firebase/Widgets/AddData.dart";
 import "package:flutter_firebase/Widgets/CounterProvider.dart";
-import "package:flutter_firebase/Widgets/Homepage.dart";
+// import "package:flutter_firebase/Widgets/Homepage.dart";
 import "package:flutter_firebase/Widgets/PhoneAuth.dart";
 import "package:flutter_firebase/Widgets/StateManagement1.dart";
 import "package:flutter_firebase/Widgets/TabConcept.dart";
@@ -26,19 +33,9 @@ class Myapp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Homepage(),
       debugShowCheckedModeBanner: false,
+      home:Splashpage(),
+
     );
   }
 }
-
-// class FirstWidget extends StatelessWidget {
-//   const FirstWidget({super.key});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text("Flutter-Firebase",style:TextStyle(fontSize: 20) ),backgroundColor: Colors.green.shade300,foregroundColor: Colors.white,),
-//     );
-//   }
-// }
