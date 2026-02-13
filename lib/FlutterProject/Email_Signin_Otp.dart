@@ -6,7 +6,7 @@ import "dart:convert";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
-import "package:flutter_firebase/FlutterProject/student_home_page.dart";
+import "package:flutter_firebase/FlutterProject/navigationBar.dart";
 import 'package:http/http.dart' as http;
 // import "package:firebase_auth/firebase_auth.dart";
 class EmailSigninOtp extends StatefulWidget {
@@ -161,7 +161,7 @@ class _EmailSigninOtpState extends State<EmailSigninOtp> {
         // CircularProgressIndicator();
        Timer(Duration(seconds: 4), (){
          Navigator.pushReplacement(context,MaterialPageRoute(builder: (context){
-           return StudentHomePage();
+           return BottomNavigation();
          }));
        });
        setState(() {

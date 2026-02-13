@@ -177,12 +177,35 @@ class _BookingState extends State<Booking> {
       final existStart = doc['startMin'];
       final existEnd = doc['endMin'];
 
+
       if (newStart < existEnd && newEnd > existStart) {
         setState(() => isLoading = false);
         _showMsg("Selected time overlaps with another booking");
         return;
       }
     }
+    /// 🚫 PREVENT PAST TIME BOOKING
+    final now = DateTime.now();
+
+// If selected date is today
+    final selected = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (selected == today) {
+      final nowMinutes = now.hour * 60 + now.minute;
+
+      if (newStart <= nowMinutes) {
+        setState(() => isLoading = false);
+        _showMsg("You cannot book a past time");
+        return;
+      }
+    }
+
 
     /// 3️⃣ AUTO-CONFIRM BOOKING
     await bookingsRef.add({
@@ -258,3 +281,4 @@ class _BookingState extends State<Booking> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 }
+

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase/FlutterProject/Res_ProfilePage.dart';
 import 'package:flutter_firebase/FlutterProject/SignInPage.dart';
 import 'package:flutter_firebase/FlutterProject/SplashPage.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +13,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId  = FirebaseAuth.instance.currentUser!.uid;
+
 
     return Scaffold(
       appBar: AppBar(
@@ -37,12 +39,12 @@ class ProfilePage extends StatelessWidget {
 
           final String name = data['fullname'] ?? "User";
           final String email = data['email'] ?? "-";
-          final Timestamp createdAt = data['SignedUpAt'];
+          final Timestamp createdAt =data['SignedUpAt' ] ?? data['createdAt'];
 
           final String joinedDate =
           DateFormat('dd MM yyyy').format(createdAt.toDate());
 
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
@@ -100,7 +102,58 @@ class ProfilePage extends StatelessWidget {
                   value: "Student",
                 ),
 
-                const Spacer(),
+                const SizedBox(height: 12),
+
+
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ResProfilepage(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.lock_reset,
+                          color: Colors.teal,
+                          size: 24,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          "Reset Password",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Spacer(),
+                        Icon(Icons.arrow_forward_ios, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+
+
+
+
+                const SizedBox(height: 30),
+
 
                 // 🚪 Logout
                 SizedBox(
@@ -118,7 +171,7 @@ class ProfilePage extends StatelessWidget {
 
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const Signinpage()),
+                        MaterialPageRoute(builder: (_) =>  Signinpage()),
                             (route) => false,
                       );
                     },

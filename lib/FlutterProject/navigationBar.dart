@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase/FlutterProject/HomePage.dart';
 import 'package:flutter_firebase/FlutterProject/profile_page.dart';
-import 'student_home_page.dart';
+
 import 'my_booking_page.dart';
 //import 'student_profile_page.dart';
 import './resourcely_colors.dart';

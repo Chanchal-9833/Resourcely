@@ -4,19 +4,17 @@ class Counterprovider extends ChangeNotifier{
   int _count=0;
 
 //   Events
-  void Increment(){
-    _count ++;
-    notifyListeners();
+void Increment(){
+  _count ++;
+  notifyListeners();
 
+}
+void Decrement(){
+  if(_count > 0){
+    _count--;
   }
-  void Decrement(){
-    if(_count > 0){
-      _count--;
-    }
-    notifyListeners();
-  }
+  notifyListeners();
+}
 // Get value of count
-  int getCount(){
-    return _count;
-  }
+int getCount()=>_count;
 }

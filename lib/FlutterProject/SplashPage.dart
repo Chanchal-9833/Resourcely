@@ -3,7 +3,6 @@ import "dart:async";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
-import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
 
 class Splashpage extends StatefulWidget {
   const Splashpage({super.key});
@@ -18,9 +17,10 @@ class _SplashpageState extends State<Splashpage> {
     // TODO: implement initState
     super.initState();
     Timer(Duration(seconds: 3), (){
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuthGate()
 
-      ),);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
+        return Signinpage();
+      }));
     });
   }
   @override

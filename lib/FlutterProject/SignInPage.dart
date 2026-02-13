@@ -7,12 +7,13 @@ import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
-import 'navigationBar.dart';
 import "package:flutter/foundation.dart";
-import "package:flutter_firebase/FlutterProject/student_home_page.dart";
+import "package:flutter_firebase/FlutterProject/navigationBar.dart";
+import "package:shared_preferences/shared_preferences.dart";
 
 class Signinpage extends StatefulWidget {
-  const Signinpage({super.key});
+  String? username="";
+  Signinpage();
 
   @override
   State<Signinpage> createState() => _SigninpageState();
@@ -35,7 +36,11 @@ class _SigninpageState extends State<Signinpage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Row(children: [CircleAvatar(backgroundImage: AssetImage("Images/Resourcely_logo1.png"),radius: 20,),Text("Resourcely",style:TextStyle(fontSize: 20,fontFamily: "Mono",fontWeight: FontWeight.w500),),],),
+          title: Row(children:[CircleAvatar(
+          backgroundImage:AssetImage("Images/Resourcely_logo1.png"),
+          radius: 20,
+        ),Text("Resourcely",style:TextStyle(fontSize: 20,fontFamily: "Mono",fontWeight: FontWeight.w500),),
+          ]),
           backgroundColor: Color(0xFF00796B),
           foregroundColor: Colors.white,
         ),
@@ -177,9 +182,25 @@ class _SigninpageState extends State<Signinpage> {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed In SuccessFully!",
                           style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                           ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
+
                         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                           return BottomNavigation();
+                          return BottomNavigation();
                         }));
+                        final user = FirebaseAuth.instance.currentUser;
+
+                        final doc = await FirebaseFirestore.instance
+                            .collection("Users")
+                            .doc(user!.uid)
+                            .get();
+
+                        final username = doc["fullname"];
+                        final email=doc["email"];
+                        final prefs = await SharedPreferences.getInstance();
+                        prefs.setString("username", username);
+
+                        final prefss=await SharedPreferences.getInstance();
+                        prefss.setString("email", email ?? c_email);
+                        print("Email Saved ${prefss.getString("email")}");
                       }on FirebaseAuthException
                       catch(err){
                         print("Err code :${err.code}");

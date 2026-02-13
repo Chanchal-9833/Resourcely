@@ -2,37 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import './resourcely_colors.dart';
+import 'package:rxdart/rxdart.dart';
+
+
 class MyBookingsPage extends StatelessWidget {
   const MyBookingsPage({super.key});
 
-  /// ⏱ Convert minutes → TimeOfDay
+  /// Convert minutes → TimeOfDay
   TimeOfDay minToTime(int min) {
     return TimeOfDay(hour: min ~/ 60, minute: min % 60);
   }
 
-  /// ⏱ Build booking END DateTime
-  DateTime buildEndDateTime(
-      DateTime date,
-      dynamic endTime,
-      ) {
-    // PC booking → already string time (e.g. 2:20 PM)
-    if (endTime is String) {
-      final tod = TimeOfDay(
-        hour: int.parse(endTime.split(':')[0]) % 12 +
-            (endTime.contains("PM") ? 12 : 0),
-        minute: int.parse(endTime.split(':')[1].split(' ')[0]),
-      );
-      return DateTime(
-          date.year, date.month, date.day, tod.hour, tod.minute);
+  /// Parse "2:30 PM" safely
+  DateTime parseStringTime(DateTime date, String timeString) {
+    final parts = timeString.split(' ');
+    final hm = parts[0].split(':');
+
+    int hour = int.parse(hm[0]);
+    int minute = int.parse(hm[1]);
+
+    if (parts[1] == "PM" && hour != 12) {
+      hour += 12;
+    }
+    if (parts[1] == "AM" && hour == 12) {
+      hour = 0;
     }
 
-    // Facility booking → minutes
-    final tod = minToTime(endTime);
-    return DateTime(
-        date.year, date.month, date.day, tod.hour, tod.minute);
+    return DateTime(date.year, date.month, date.day, hour, minute);
   }
 
-  /// ❌ Cancel booking
+  /// Build booking END DateTime safely
+  DateTime buildEndDateTime(DateTime date, dynamic endTime) {
+    if (endTime == null) return date;
+
+    if (endTime is String) {
+      return parseStringTime(date, endTime);
+    }
+
+    if (endTime is int) {
+      final tod = minToTime(endTime);
+      return DateTime(date.year, date.month, date.day, tod.hour, tod.minute);
+    }
+
+    return date;
+  }
+
+  /// Cancel booking
   Future<void> cancelBooking(String collection, String id) async {
     await FirebaseFirestore.instance
         .collection(collection)
@@ -48,8 +63,7 @@ class MyBookingsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "My Bookings",
-
-          style: TextStyle(fontFamily: "Mono"),
+          style: TextStyle(fontFamily: "Mono", color: Colors.white),
         ),
         backgroundColor: AppColors.primary,
         centerTitle: true,
@@ -64,11 +78,15 @@ class MyBookingsPage extends StatelessWidget {
           final now = DateTime.now();
 
           final upcoming = snapshot.data!
-              .where((b) => b['endDateTime'].isAfter(now))
+              .where((b) =>
+          b['status'] != 'cancelled' &&
+              b['endDateTime'].isAfter(now))
               .toList();
 
           final past = snapshot.data!
-              .where((b) => b['endDateTime'].isBefore(now))
+              .where((b) =>
+          b['status'] == 'cancelled' ||
+              b['endDateTime'].isBefore(now))
               .toList();
 
           if (upcoming.isEmpty && past.isEmpty) {
@@ -80,13 +98,13 @@ class MyBookingsPage extends StatelessWidget {
             children: [
               if (upcoming.isNotEmpty) ...[
                 _sectionTitle("Upcoming"),
-                ...upcoming.map((b) =>
-                    _bookingCard(context, b, isUpcoming: true)),
+                ...upcoming
+                    .map((b) => _bookingCard(context, b, isUpcoming: true)),
               ],
               if (past.isNotEmpty) ...[
                 _sectionTitle("Past"),
-                ...past.map((b) =>
-                    _bookingCard(context, b, isUpcoming: false)),
+                ...past
+                    .map((b) => _bookingCard(context, b, isUpcoming: false)),
               ],
             ],
           );
@@ -95,74 +113,76 @@ class MyBookingsPage extends StatelessWidget {
     );
   }
 
-  /// 🔁 Merge Facility + PC bookings
+  /// Properly merge Facility + PC bookings streams
   Stream<List<Map<String, dynamic>>> _mergedBookings(
-      String uid, BuildContext context) async* {
-    final facilitySnap = FirebaseFirestore.instance
+      String uid, BuildContext context) {
+    final facilityStream = FirebaseFirestore.instance
         .collection('bookings')
         .where('userId', isEqualTo: uid)
         .snapshots();
 
-    final pcSnap = FirebaseFirestore.instance
+    final pcStream = FirebaseFirestore.instance
         .collection('PcRoom')
         .where('userId', isEqualTo: uid)
         .snapshots();
 
-    await for (final _ in facilitySnap) {
-      final f = await FirebaseFirestore.instance
-          .collection('bookings')
-          .where('userId', isEqualTo: uid)
-          .get();
-
-      final p = await FirebaseFirestore.instance
+    return facilityStream.asyncMap((facilitySnap) async {
+      final pcSnap = await FirebaseFirestore.instance
           .collection('PcRoom')
           .where('userId', isEqualTo: uid)
           .get();
 
       final List<Map<String, dynamic>> merged = [];
 
-      /// 🏟 Facility bookings
-      for (var d in f.docs) {
+      /// Facility bookings
+      for (var d in facilitySnap.docs) {
         final data = d.data();
+
+        if (data['date'] == null) continue;
+
         final date = (data['date'] as Timestamp).toDate();
         final endDT = buildEndDateTime(date, data['endMin']);
 
         merged.add({
           'id': d.id,
           'collection': 'bookings',
-          'title': data['facilityId'].toString().toUpperCase(),
+          'title': data['facilityId']?.toString().toUpperCase() ?? '',
           'date': date,
           'time':
           "${minToTime(data['startMin']).format(context)} - ${minToTime(data['endMin']).format(context)}",
-          'status': data['status'],
+          'status': data['status'] ?? 'active',
           'endDateTime': endDT,
         });
       }
 
-      /// 💻 PC bookings
-      for (var d in p.docs) {
+      /// PC bookings
+      for (var d in pcSnap.docs) {
         final data = d.data();
+
+        if (data['date'] == null) continue;
+
         final date = (data['date'] as Timestamp).toDate();
         final endDT = buildEndDateTime(date, data['endTime']);
 
         merged.add({
           'id': d.id,
           'collection': 'PcRoom',
-          'title': "PC ${data['pcnumber']}",
+          'title': "PC ${data['pcnumber'] ?? ''}",
           'date': date,
           'time': "${data['startTime']} - ${data['endTime']}",
-          'status': data['status'],
+          'status': data['status'] ?? 'active',
           'endDateTime': endDT,
         });
       }
 
       merged.sort(
               (a, b) => b['endDateTime'].compareTo(a['endDateTime']));
-      yield merged;
-    }
+
+      return merged;
+    });
   }
 
-  /// 🧱 Section title
+  /// Section title
   Widget _sectionTitle(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -176,14 +196,15 @@ class MyBookingsPage extends StatelessWidget {
     );
   }
 
-  /// 🎫 Booking Card
+  /// Booking Card
   Widget _bookingCard(
       BuildContext context,
       Map<String, dynamic> b, {
         required bool isUpcoming,
       }) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape:
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ListTile(
         leading: const Icon(Icons.event),
         title: Text(b['title']),
@@ -203,9 +224,10 @@ class MyBookingsPage extends StatelessWidget {
             ),
           ],
         ),
-        trailing: isUpcoming && b['status'] != 'cancelled'
+        trailing: isUpcoming
             ? IconButton(
-          icon: const Icon(Icons.cancel, color: Colors.red),
+          icon:
+          const Icon(Icons.cancel, color: Colors.red),
           onPressed: () =>
               cancelBooking(b['collection'], b['id']),
         )
