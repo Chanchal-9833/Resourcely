@@ -17,6 +17,9 @@ class _ResProfilepageState extends State<ResProfilepage> {
   final password=TextEditingController();
 
   // String num="";
+  // void delete_user_account(){
+  //
+  // }
   void get_username()async{
     final prefs=await SharedPreferences.getInstance();
     setState(() {
@@ -189,6 +192,16 @@ class _ResProfilepageState extends State<ResProfilepage> {
 
               ),
             ),
+            SizedBox(height: 30,),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(style:ButtonStyle(
+                foregroundColor: WidgetStatePropertyAll(Colors.white),
+                backgroundColor: WidgetStatePropertyAll(Colors.redAccent),
+                padding: WidgetStatePropertyAll(EdgeInsets.all(16))
+              ),
+    onPressed: (){}, child: Text("Delete Account ?",style: TextStyle(fontSize: 18,fontFamily: "Mono",fontWeight: FontWeight.w600),)),
+            )
 
             // SizedBox(height: 30,),
             // SizedBox(

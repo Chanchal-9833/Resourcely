@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase/FlutterProject/HomePage.dart';
+import 'package:flutter_firebase/FlutterProject/SignInPage.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Pcbookingpage extends StatefulWidget {
+
   int pcnumber;
   final String? minBookedTime;
   final String? maxBookedTime;
@@ -29,7 +32,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
   }
   int? bookedStartMin;
   int? bookedEndMin;
-
+  bool loading=false;
 
   String otp_email="";
   int membersCount = 1;
@@ -570,7 +573,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
 
                 },
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               SizedBox(
                 width: double.infinity,
@@ -627,10 +630,14 @@ class _PcbookingpageState extends State<Pcbookingpage> {
 
 
                     }
+                    setState(() {
+                     loading=true;
+                    });
                     if(hasError){
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("All Fields are Required.!",
                         style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                         ,backgroundColor: Colors.red,behavior: SnackBarBehavior.floating,),);
+                      loading=false;
                       return;
                     }
                     else{
@@ -643,6 +650,28 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                           });
                         });
                       }
+                      final User? user =await FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        print("User not logged in");
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
+                          return Signinpage();
+                        }));
+                        return;
+                      }
+                      String userEmail = user.email ?? "";
+                      String userUid = user.uid;
+                      final querySnapshot = await FirebaseFirestore.instance
+                          .collection("Users")
+                          .where("email", isEqualTo: userEmail)
+                          .get();
+
+                      if (querySnapshot.docs.isEmpty) {
+                        print("User document not found");
+                        return;
+                      }
+
+                      String userFullName =
+                          querySnapshot.docs.first.data()['fullname'] ?? "";
                       await FirebaseFirestore.instance
                           .collection("PcRoom")
                           .doc("${DateTime.now()}")
@@ -653,7 +682,11 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                         "startTime": startTime!.format(context),
                         "endTime": endTime!.format(context),
                         "status": "booked",
-                        "pcnumber":widget.pcnumber
+                        "pcnumber":widget.pcnumber,
+                        "user_name":userFullName,
+                        "uid":userUid,
+                        "user_email":userEmail
+
                       });
                       final prefs=await SharedPreferences.getInstance();
                       String? em=prefs.getString("email");
@@ -677,6 +710,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                         if (response.statusCode == 200) {
                           final data = jsonDecode(response.body);
                           print('OTP sent successfully: ${data['msg']}');
+                          loading=false;
                           showDialog(context: context, builder: (_)=>AlertDialog(
                             title: Container(child: Icon(Icons.check_circle,color: Colors.green,size: 100,),)
                             ,
@@ -689,7 +723,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                             constraints: BoxConstraints(maxHeight: 300,maxWidth: 300,minHeight: 300,minWidth: 300),
                           ));
 
-                          Timer(Duration(seconds: 5), () {
+                          Timer(Duration(seconds: 3), () {
                             Navigator.pushReplacement(context,MaterialPageRoute(builder:(context){
                               return Homepage();
                             }));
@@ -737,7 +771,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: loading ? CircularProgressIndicator(color: Colors.white,) : const Text(
                     "Book Slot",
                     style: TextStyle(fontSize: 18, fontFamily: "Mono"),
                   ),

@@ -2,11 +2,15 @@
 
 // import "dart:async";
 
+import "dart:async";
+
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/PcBookingPage.dart";
+import "package:flutter_firebase/FlutterProject/PcroomCoverPage.dart";
 import "package:flutter_firebase/FlutterProject/Res_ProfilePage.dart";
+import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:intl/intl.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
@@ -20,6 +24,7 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  bool already_booked=false;
   Map<String, Map<String, String>> dateMinMax = {};
   int? pc_number;
   String? min;
@@ -122,6 +127,64 @@ class _HomepageState extends State<Homepage> {
 
     }
   }
+  late StreamSubscription<QuerySnapshot> bookingListener;
+
+  void listenUserBooking() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String uid = user.uid;
+
+    DateTime now = DateTime.now();
+    DateTime todayOnly = DateTime(now.year, now.month, now.day);
+
+    bookingListener = FirebaseFirestore.instance
+        .collection("PcRoom")
+        .where("uid", isEqualTo: uid)
+        .snapshots()
+        .listen((snapshot) {
+      bool bookedToday = false;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (!data.containsKey("date")) continue;
+
+        DateTime bookingDate =
+        (data["date"] as Timestamp).toDate();
+
+        DateTime bookingOnly = DateTime(
+          bookingDate.year,
+          bookingDate.month,
+          bookingDate.day,
+        );
+
+        if (bookingOnly == todayOnly) {
+          bookedToday = true;
+          break;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          already_booked = bookedToday;
+        });
+      }
+    });
+  }
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    listenUserBooking();
+  }
+  @override
+  void dispose() {
+    bookingListener.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(length: 3, child: Scaffold(
@@ -222,114 +285,171 @@ class _HomepageState extends State<Homepage> {
       ),
       body: TabBarView(children: [
         Container(
-            margin: EdgeInsets.only(top:2),
-            padding: EdgeInsetsGeometry.all(30),
-            child:GridView.builder(itemCount:4,scrollDirection:Axis.vertical,gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 300,crossAxisSpacing:20,mainAxisSpacing:25,mainAxisExtent:238),
-                itemBuilder:(context,index){return Card(
-                    child: Column(
-                      children: [Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Image.network("https://tse2.mm.bing.net/th/id/OIP.uUwuVyEOr4oYpzjFO9kU2wHaFj?pid=Api&P=0&h=220"),
-                      ),
-                        // SizedBox(child: CircleAvatar(child: Text("${index+1}"),),),
-                        SizedBox(
-                          width: 160,
-                          child: TextButton(style:ButtonStyle(
-                              backgroundColor: WidgetStatePropertyAll(Color(0xFF007968)),
-                              padding: WidgetStatePropertyAll(EdgeInsetsGeometry.all(10))
-                          ),onPressed: ()async{
-                            pc_number=index+1;
-                            print("Pc ${pc_number}");
-                            await fetch_booking_time();
-                            Navigator.push(context, MaterialPageRoute(builder: (context){
-                              return Pcbookingpage(pcnumber: index+1, minBookedTime: min,
-                                maxBookedTime: max,bookingsByDate: pc_bookings[pc_number]!);
-                            }));
-                          }, child: Text("Book PC ${index+1}",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w700,color:Colors.white),)),
-                        ),SizedBox(height: 3,),
-                        SizedBox(
-                          width: 160,
-                          child: TextButton(style:ButtonStyle(
-                              backgroundColor: WidgetStatePropertyAll(Colors.grey.shade400),
-                              padding: WidgetStatePropertyAll(EdgeInsetsGeometry.all(10))
-                          ),onPressed: () async {
-                            pc_number = index + 1;
-                            await fetch_booking_time();
+          child: Column(
 
-                            if (pc_bookings[pc_number] == null ||
-                                pc_bookings[pc_number]!.isEmpty ||
-                                min == null ||
-                                max == null) {
-                              // No data → show message instead of crashing
-                              showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text("All Slots Available",style: TextStyle(color: Colors.green),),
-                                  content: const Text("Still No booking done for this PC.",style: TextStyle(color: Colors.black)),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text("OK"),
-                                    )
-                                  ],
-                                ),
-                              );
-                              return;
-                            }
-
-                            showMenu(
-                              context: context,
-                              position: const RelativeRect.fromLTRB(300, 300, 0, 0),
-                              items: [
-                                PopupMenuItem(
-                                  enabled: false,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Header
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: const [
-                                          Text("Date", style: TextStyle(fontWeight: FontWeight.bold)),
-                                          Text("Time", style: TextStyle(fontWeight: FontWeight.bold)),
-                                          Text("Status", style: TextStyle(fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
-                                      const Divider(),
-
-                                      // Safe mapping
-                                      ...dateMinMax.entries.map((entry) {
-                                        final date = entry.key;
-                                        final minT = entry.value["min"];
-                                        final maxT = entry.value["max"];
-                                        print(dateMinMax);
-
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 4),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(date),
-                                              Text("$minT - $maxT"),
-                                              const Text("Booked", style: TextStyle(color: Colors.red)),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                              , child: Text("View Slot",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w700,color:Colors.grey.shade800),)),
+            children: [
+              Center(
+                child: Container(
+                  margin: EdgeInsets.only(top:30,left: 10,right: 10),
+                  // color: Colors.blueGrey.shade200,
+                  decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      boxShadow:[BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 3,
+                          offset: Offset(0, 3)
+                      ),],
+                      borderRadius: BorderRadius.circular(20)
+                  ),
+                  // padding: EdgeInsets.all(20),
+                  width: 500,
+                  height: 200,
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 150,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(10),
+                              topRight:Radius.circular(10)
+                          ),
+                          child: Image.asset(
+                            "Images/pcroom-cover.png",
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                        SizedBox(height: 3,)
+                      ),
+
+                      SizedBox(height: 10,),
+                      Text("Pc Room",style: TextStyle(fontWeight: FontWeight.w700,fontFamily: "Mono",fontSize: 20,color: Colors.black),)
+                    ],
+                  ),
+                ),
+              ),
+              Center(
+                child: Card(
+                  elevation: 6,
+                  shadowColor: Colors.black87,
+                  color: Colors.grey.shade200,
+                  margin: EdgeInsets.only(left:10,right: 10,top:20),
+                  child: ListTile(
+                    // leading: Icon(Icons.info_outline,color: Color(0xFF00796B,),size: 15,),
+                    title:  Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.info_outline,
+                          color: Color(0xFF00796B),
+                          size: 18,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "Description",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontFamily: "Mono",
+                            fontSize: 15,
+                            color: Colors.black,
+                          ),
+                        ),
                       ],
-                    )
-                );})
+                    ),
+                    subtitle: Text("     -Well Maintained Pc Room for College Students.\n     Available in College Hours.",style: TextStyle(fontFamily: "Mono",fontSize: 12,color: Colors.black)),
+                  ),
+                ),
+              ),
+              Center(
+                child: Card(
+                  elevation: 6,
+                  shadowColor: Colors.black87,
+                  color: Colors.grey.shade200,
+                  margin: EdgeInsets.only(left:10,right: 10,top:20),
+                  child: ListTile(
+                    // leading: Icon(Icons.rule,color: Color(0xFF00796B,),size: 15,),
+                    title:  Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.rule,
+                          color: Color(0xFF00796B),
+                          size: 18,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "Rules & Guidelines",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontFamily: "Mono",
+                            fontSize: 15,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Text("     -Only College Students Allowed \n     -Max booking:2Hrs\n     -Min booking:30Min\n     -Per day Only single Booking Allowed",style: TextStyle(fontFamily: "Mono",fontSize: 12,color: Colors.black)),
+                  ),
+                ),
+              ),
+              Center(
+                child: Card(
+                  elevation: 6,
+                  shadowColor: Colors.black87,
+                  color: Colors.grey.shade200,
+                  margin: EdgeInsets.only(left:10,right: 10,top:20),
+                  child: ListTile(
+                    // leading: Icon(Icons.timer,color: Color(0xFF00796B,),size: 15,),
+                    title:  Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.timer,
+                          color: Color(0xFF00796B),
+                          size: 18,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "Operating Hours",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontFamily: "Mono",
+                            fontSize: 15,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                    subtitle: Text("     -7.30 to 5.30",style: TextStyle(fontFamily: "Mono",fontSize: 12,color: Colors.black)),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20,),
+              SizedBox(
+                width: 490,
+                child: already_booked ? ElevatedButton(style: ButtonStyle(
+                    backgroundColor: WidgetStatePropertyAll(Colors.redAccent),
+                    padding: WidgetStatePropertyAll(EdgeInsets.all(20))
+                ),
+                    onPressed: (){
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return Homepage();
+                      }));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Cant Proceed To Book Now...Only single Booking allowed per day.",style: TextStyle(fontWeight: FontWeight.w600,fontFamily: "Mono",color: Colors.white,fontSize: 14),),backgroundColor: Colors.redAccent,behavior:SnackBarBehavior.floating,),);
+                    }, child:Text("Booking Temporarily Closed",style: TextStyle(fontFamily: "Mono",fontSize: 16,color: Colors.white))) : ElevatedButton(style: ButtonStyle(
+                    backgroundColor: WidgetStatePropertyAll(Color(0xFF00796B)),
+                    padding: WidgetStatePropertyAll(EdgeInsets.all(20))
+                ),
+                    onPressed: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (context){
+                    return Pcroomcoverpage();
+                  }));
+                    }, child:Text("Proceed to Book->",style: TextStyle(fontFamily: "Mono",fontSize: 18,color: Colors.white))),
+              )
+
+            ],
+          ),
         ),
+
         Text("Turf"),
         Text("Bad")
       ]),
