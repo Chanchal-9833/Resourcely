@@ -11,9 +11,11 @@ import "package:flutter_firebase/FlutterProject/PcBookingPage.dart";
 import "package:flutter_firebase/FlutterProject/PcroomCoverPage.dart";
 import "package:flutter_firebase/FlutterProject/Res_ProfilePage.dart";
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
+import "package:flutter_firebase/FlutterProject/my_booking_page.dart";
+import "package:flutter_firebase/FlutterProject/profile_page.dart";
 import "package:intl/intl.dart";
 import "package:shared_preferences/shared_preferences.dart";
-
+import "facility_details_page.dart";
 import "auth_wrapper.dart";
 
 class Homepage extends StatefulWidget {
@@ -199,7 +201,7 @@ class _HomepageState extends State<Homepage> {
                   onPressed: () {
                     showMenu(position:RelativeRect.fromLTRB(0,0, 0, 0),context: context, items: [PopupMenuItem(onTap:(){
                       Navigator.push(context, MaterialPageRoute(builder: (context){
-                        return ResProfilepage();
+                        return ProfilePage();
                       }));
                     },child: Row(
                       children: [
@@ -217,6 +219,9 @@ class _HomepageState extends State<Homepage> {
                           ],
                         ),
                         onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context){
+                            return MyBookingsPage();
+                          }));
 
 
                         },
@@ -255,7 +260,7 @@ class _HomepageState extends State<Homepage> {
                   child: Container(
                     height: 60,
                     child: TabBar(
-                      indicatorColor: Color(0xFFB2DFDB),
+                        indicatorColor: Color(0xFFB2DFDB),
                         indicatorWeight: 5,
                         tabs: [ Tab(child: Row(children: [ Text("Pc Room",style:
                         TextStyle(fontFamily: "Mono",fontSize: 15,color: Colors.white),),
@@ -440,18 +445,17 @@ class _HomepageState extends State<Homepage> {
                     padding: WidgetStatePropertyAll(EdgeInsets.all(20))
                 ),
                     onPressed: (){
-                  Navigator.push(context, MaterialPageRoute(builder: (context){
-                    return Pcroomcoverpage();
-                  }));
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return Pcroomcoverpage();
+                      }));
                     }, child:Text("Proceed to Book->",style: TextStyle(fontFamily: "Mono",fontSize: 18,color: Colors.white))),
               )
 
             ],
           ),
         ),
-
-        Text("Turf"),
-        Text("Bad")
+        const FacilityDetailsPage(facilityId: "turf"),
+        const FacilityDetailsPage(facilityId: "badminton")
       ]),
     )
     );

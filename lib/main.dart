@@ -1,14 +1,25 @@
+
 import "package:firebase_core/firebase_core.dart";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/Email_Signin_Otp.dart";
 import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:flutter_firebase/FlutterProject/PcBookingPage.dart";
+// <<<<<<< HEAD
 import "package:flutter_firebase/FlutterProject/PcroomCoverPage.dart";
 import "package:flutter_firebase/FlutterProject/Res_ProfilePage.dart";
+// =======
+// >>>>>>> origin/profile-merge-fix
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:flutter_firebase/FlutterProject/SplashPage.dart";
 import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
+// <<<<<<< HEAD
+// =======
+import "package:flutter_firebase/FlutterProject/facility_details_page.dart";
+import "package:flutter_firebase/FlutterProject/profile_page.dart";
+
+
+// >>>>>>> origin/profile-merge-fix
 import "package:flutter_firebase/Widgets/AddData.dart";
 import "package:flutter_firebase/Widgets/CounterProvider.dart";
 // import "package:flutter_firebase/Widgets/Homepage.dart";
@@ -31,10 +42,18 @@ class Myapp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home:Homepage(),
+// <<<<<<< HEAD
+//       home:Homepage(),
+// =======
+// >>>>>>> origin/profile-merge-fix
       debugShowCheckedModeBanner: false,
+      home:Splashpage()
+
     );
   }
 }
+// <<<<<<< HEAD
 
 
+// =======
+// >>>>>>> origin/profile-merge-fix

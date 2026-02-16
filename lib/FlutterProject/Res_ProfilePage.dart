@@ -64,22 +64,22 @@ class _ResProfilepageState extends State<ResProfilepage> {
               child: CircleAvatar(
                 child: Text(
                   uname.isNotEmpty ? uname[0].toUpperCase() : "U",
-                style: TextStyle(fontSize: 50),),radius: 50,
+                  style: TextStyle(fontSize: 50),),radius: 50,
               ),
             ),
             SizedBox(height: 15),
-           TextField(
-             readOnly: true,
-             controller: fullname,
-             style: TextStyle(fontWeight: FontWeight.w500,fontSize: 17,fontFamily: "Mono",),
-             decoration: InputDecoration(
-               floatingLabelStyle: TextStyle(fontSize: 15),
-               labelText: "fullname",
-               floatingLabelBehavior: FloatingLabelBehavior.always,
-               suffixIcon: Icon(Icons.arrow_forward,size: 17,)
+            TextField(
+              readOnly: true,
+              controller: fullname,
+              style: TextStyle(fontWeight: FontWeight.w500,fontSize: 17,fontFamily: "Mono",),
+              decoration: InputDecoration(
+                  floatingLabelStyle: TextStyle(fontSize: 15),
+                  labelText: "fullname",
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  suffixIcon: Icon(Icons.arrow_forward,size: 17,)
 
-             ),
-           ),
+              ),
+            ),
             SizedBox(height: 20,),
             TextField(
               readOnly: true,
@@ -147,40 +147,6 @@ class _ResProfilepageState extends State<ResProfilepage> {
                   ),
                 );
 
-                // ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration:Duration(seconds: 1),content: Text("Want To Reset Password ?",
-                //   style: TextStyle(fontWeight:FontWeight.w500,fontSize: 18,fontFamily: "Mono"),)
-                //   ,behavior: SnackBarBehavior.floating,backgroundColor:Color(0xFF00796B),action: SnackBarAction(label: "Yes",
-                //       textColor: Colors.white,
-                //       onPressed: ()async{
-                //   final mail = email.text.trim();
-                //
-                //   if (mail.isEmpty) {
-                //     ScaffoldMessenger.of(context).showSnackBar(
-                //       SnackBar(
-                //         content: Text("Please enter your email"),
-                //         behavior: SnackBarBehavior.floating,
-                //       ),
-                //     );
-                //     return;
-                //   }
-                //   try {
-                //     await FirebaseAuth.instance.sendPasswordResetEmail(email: mail);
-                //
-                //     ScaffoldMessenger.of(context).showSnackBar(
-                //       SnackBar(
-                //         content: Text("Password reset link sent"),
-                //         behavior: SnackBarBehavior.floating,
-                //       ),
-                //     );
-                //   } on FirebaseAuthException catch (e) {
-                //     ScaffoldMessenger.of(context).showSnackBar(
-                //       SnackBar(
-                //         content: Text(e.message ?? "Failed to send link"),
-                //         behavior: SnackBarBehavior.floating,
-                //       ),
-                //     );
-                //   }
-                // }),),);
               },
               style: TextStyle(fontWeight: FontWeight.w500,fontSize: 17,fontFamily: "Mono"),
               decoration: InputDecoration(
@@ -196,11 +162,11 @@ class _ResProfilepageState extends State<ResProfilepage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(style:ButtonStyle(
-                foregroundColor: WidgetStatePropertyAll(Colors.white),
-                backgroundColor: WidgetStatePropertyAll(Colors.redAccent),
-                padding: WidgetStatePropertyAll(EdgeInsets.all(16))
+                  foregroundColor: WidgetStatePropertyAll(Colors.white),
+                  backgroundColor: WidgetStatePropertyAll(Colors.redAccent),
+                  padding: WidgetStatePropertyAll(EdgeInsets.all(16))
               ),
-    onPressed: (){}, child: Text("Delete Account ?",style: TextStyle(fontSize: 18,fontFamily: "Mono",fontWeight: FontWeight.w600),)),
+                  onPressed: (){}, child: Text("Delete Account ?",style: TextStyle(fontSize: 18,fontFamily: "Mono",fontWeight: FontWeight.w600),)),
             )
 
             // SizedBox(height: 30,),

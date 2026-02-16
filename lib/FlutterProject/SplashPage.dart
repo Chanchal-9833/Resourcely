@@ -18,6 +18,7 @@ class _SplashpageState extends State<Splashpage> {
     // TODO: implement initState
     super.initState();
     Timer(Duration(seconds: 3), (){
+
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
         return AuthWrapper();
       }));

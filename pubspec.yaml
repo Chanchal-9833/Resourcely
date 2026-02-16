@@ -43,6 +43,11 @@ dependencies:
   http: ^1.6.0
   intl: ^0.20.2
   shared_preferences: ^2.5.4
+#<<<<<<< HEAD
+#=======
+  rxdart: ^0.27.7
+
+#>>>>>>> origin/profile-merge-fix
 
 dev_dependencies:
   flutter_test:

@@ -11,7 +11,7 @@ import "package:shared_preferences/shared_preferences.dart";
 
 class Signinpage extends StatefulWidget {
   String? username="";
-   Signinpage();
+  Signinpage();
 
   @override
   State<Signinpage> createState() => _SigninpageState();
@@ -256,9 +256,9 @@ class _SigninpageState extends State<Signinpage> {
                 SizedBox(
                   width:double.infinity,
                   child: ElevatedButton(style:ButtonStyle(
-                    backgroundColor: WidgetStatePropertyAll(Colors.white),
-                    overlayColor: WidgetStatePropertyAll(Colors.white),
-                    padding: WidgetStatePropertyAll(EdgeInsets.all(15))
+                      backgroundColor: WidgetStatePropertyAll(Colors.white),
+                      overlayColor: WidgetStatePropertyAll(Colors.white),
+                      padding: WidgetStatePropertyAll(EdgeInsets.all(15))
 
                   ),onPressed: (){
                     Navigator.push(context,MaterialPageRoute(builder: (context){
@@ -279,11 +279,11 @@ class _SigninpageState extends State<Signinpage> {
                       child: Text("New User? ",style: TextStyle(fontSize: 17,fontFamily: "Mono",),),
                     ),
                     InkWell(
-                        onTap: (){
-                          Navigator.push(context, MaterialPageRoute(builder: (context){
-                            return Signuppage();
-                          }));
-                        },
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          return Signuppage();
+                        }));
+                      },
                       child: Container( margin: EdgeInsets.only(top:15),
                           child: Text("Sign Up",style: TextStyle(fontSize: 20,fontFamily: "Mono",
                               decoration: TextDecoration.underline,decorationColor: Colors.redAccent,

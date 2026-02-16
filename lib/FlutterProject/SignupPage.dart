@@ -268,99 +268,99 @@ class _SignuppageState extends State<Signuppage> {
               ),
             ),
             SizedBox(height: 20),
-          TextField(
-      controller: email,
-      onChanged: (_){
-    if(em_err_msg!=null){
-    setState(() {
-    em_err_msg=null;
-    });
-    }
-    if(college_email!=null){
-    setState(() {
-    college_email=null;
-    });
-    }
-    if(email_exists!=null){
-    setState(() {
-    email_exists=null;
-    });
-    }
-    },
+            TextField(
+              controller: email,
+              onChanged: (_){
+                if(em_err_msg!=null){
+                  setState(() {
+                    em_err_msg=null;
+                  });
+                }
+                if(college_email!=null){
+                  setState(() {
+                    college_email=null;
+                  });
+                }
+                if(email_exists!=null){
+                  setState(() {
+                    email_exists=null;
+                  });
+                }
+              },
 
-      decoration: InputDecoration(
-          errorText: em_err_msg!=null ? em_err_msg : college_email,
-          errorBorder:OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(
-                  color: Colors.red,
-                  width: 3
-              )) ,
-          labelText: "Email",
-          prefixIcon: Icon(Icons.email,color: Colors.grey,),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(
-                  color: Color(0xFF00796B),
-                  width: 3
-              )),
-          labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                  color: Colors.lightGreen,
-                  width: 3
-              )
-          )
-      ),
-    ),
-    SizedBox(height: 20,)
-          ,TextField(
-          onChanged:(_){
-    if(ps_err_msg!=null){
-    setState(() {
-    ps_err_msg=null;
-    });
-    }
-    if(pass_ch!=null){
-    setState(() {
-    pass_ch=null;
-    });
-    }
+              decoration: InputDecoration(
+                  errorText: em_err_msg!=null ? em_err_msg : college_email,
+                  errorBorder:OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3
+                      )) ,
+                  labelText: "Email",
+                  prefixIcon: Icon(Icons.email,color: Colors.grey,),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(
+                          color: Color(0xFF00796B),
+                          width: 3
+                      )),
+                  labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                          color: Colors.lightGreen,
+                          width: 3
+                      )
+                  )
+              ),
+            ),
+            SizedBox(height: 20,)
+            ,TextField(
+              onChanged:(_){
+                if(ps_err_msg!=null){
+                  setState(() {
+                    ps_err_msg=null;
+                  });
+                }
+                if(pass_ch!=null){
+                  setState(() {
+                    pass_ch=null;
+                  });
+                }
 
-    },
-      controller: password,
-      obscureText: obsecure,
-      decoration: InputDecoration(
-          errorText: ps_err_msg!=null?ps_err_msg :pass_ch,
-          errorBorder:OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(
-                  color: Colors.red,
-                  width: 3
-              )) ,
-          labelText: "Password",
-          prefixIcon: Icon(Icons.lock,color: Colors.grey,),
-          suffixIcon: IconButton(onPressed:(){
-            setState(() {
-              obsecure=!obsecure;                      });
-          }, icon: obsecure?Icon(Icons.remove_red_eye,color: Color(0xFF00796B),):Icon(Icons.visibility_off,color: Color(0xFF00796B),),),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(
-                  color: Color(0xFF00796B),
-                  width: 3
-              )),
-          labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                  color: Colors.lightGreen,
-                  width: 3
-              )
-          )
-      ),
-    ),
+              },
+              controller: password,
+              obscureText: obsecure,
+              decoration: InputDecoration(
+                  errorText: ps_err_msg!=null?ps_err_msg :pass_ch,
+                  errorBorder:OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(
+                          color: Colors.red,
+                          width: 3
+                      )) ,
+                  labelText: "Password",
+                  prefixIcon: Icon(Icons.lock,color: Colors.grey,),
+                  suffixIcon: IconButton(onPressed:(){
+                    setState(() {
+                      obsecure=!obsecure;                      });
+                  }, icon: obsecure?Icon(Icons.remove_red_eye,color: Color(0xFF00796B),):Icon(Icons.visibility_off,color: Color(0xFF00796B),),),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(
+                          color: Color(0xFF00796B),
+                          width: 3
+                      )),
+                  labelStyle: TextStyle(color: Colors.grey,fontFamily: "Mono"),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                          color: Colors.lightGreen,
+                          width: 3
+                      )
+                  )
+              ),
+            ),
             SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
