@@ -16,10 +16,32 @@ class _BookingState extends State<Booking> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay? startTime;
   TimeOfDay? endTime;
-
+  Set<DateTime> blockedDates = {};
   bool isLoading = false;
 
-  /// 🔹 Date stored as midnight timestamp
+  @override
+  void initState() {
+    super.initState();
+    _loadBlockedDates();
+  }
+
+  /// ✅ LOAD BLOCKED DATES CORRECTLY
+  Future<void> _loadBlockedDates() async {
+    final snap = await FirebaseFirestore.instance
+        .collection("BlockedDays")
+        .where("facilityId", isEqualTo: widget.facilityId)
+        .get();
+
+    setState(() {
+      blockedDates = snap.docs.map((doc) {
+        final ts = doc['date'] as Timestamp;
+        final d = ts.toDate();
+        return DateTime(d.year, d.month, d.day);
+      }).toSet();
+    });
+  }
+
+  /// 🔹 Normalize selected date
   Timestamp get selectedDateTs {
     final d = DateTime(
       selectedDate.year,
@@ -30,6 +52,14 @@ class _BookingState extends State<Booking> {
   }
 
   int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+  /// ✅ FORM VALIDATION
+  bool get isFormValid =>
+      startTime != null &&
+          endTime != null &&
+          !blockedDates.contains(
+            DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+          );
 
   @override
   Widget build(BuildContext context) {
@@ -57,19 +87,44 @@ class _BookingState extends State<Booking> {
     );
   }
 
-  /// 📅 DATE
+  /// 📅 DATE CARD (Blocked Dates Disabled + Snackbar Protection)
   Widget _dateCard() => _buildCard(
     icon: Icons.calendar_today,
     title: "Date",
     value:
     "${selectedDate.day}-${selectedDate.month}-${selectedDate.year}",
     onTap: () async {
+
+      // ✅ Ensure initial date is not blocked
+      DateTime safeInitialDate = selectedDate;
+      final normalizedSelected = DateTime(
+          selectedDate.year, selectedDate.month, selectedDate.day);
+
+      if (blockedDates.contains(normalizedSelected)) {
+        safeInitialDate = DateTime.now();
+
+        // Move forward until a non-blocked date is found
+        while (blockedDates.contains(DateTime(
+            safeInitialDate.year,
+            safeInitialDate.month,
+            safeInitialDate.day))) {
+          safeInitialDate =
+              safeInitialDate.add(const Duration(days: 1));
+        }
+      }
+
       final picked = await showDatePicker(
         context: context,
-        initialDate: selectedDate,
+        initialDate: safeInitialDate,
         firstDate: DateTime.now(),
         lastDate: DateTime.now().add(const Duration(days: 30)),
+        selectableDayPredicate: (day) {
+          final normalized =
+          DateTime(day.year, day.month, day.day);
+          return !blockedDates.contains(normalized);
+        },
       );
+
       if (picked != null) {
         setState(() {
           selectedDate = picked;
@@ -80,14 +135,15 @@ class _BookingState extends State<Booking> {
     },
   );
 
-  /// ⏰ START
+
+  /// ⏰ START TIME
   Widget _startTimeCard() => _buildCard(
     icon: Icons.schedule,
     title: "Start Time",
     value: startTime?.format(context) ?? "Select",
     onTap: () async {
-      final picked =
-      await showTimePicker(context: context, initialTime: TimeOfDay.now());
+      final picked = await showTimePicker(
+          context: context, initialTime: TimeOfDay.now());
       if (picked != null) {
         setState(() {
           startTime = picked;
@@ -97,7 +153,7 @@ class _BookingState extends State<Booking> {
     },
   );
 
-  /// ⏱ END
+  /// ⏱ END TIME
   Widget _endTimeCard() => _buildCard(
     icon: Icons.timelapse,
     title: "End Time (max 2 hrs)",
@@ -109,19 +165,22 @@ class _BookingState extends State<Booking> {
         context: context,
         initialTime: startTime!,
       );
+
       if (picked != null) {
         final diff =
             toMinutes(picked) - toMinutes(startTime!);
+
         if (diff <= 0 || diff > 120) {
           _showMsg("Booking must be within 2 hours");
           return;
         }
+
         setState(() => endTime = picked);
       }
     },
   );
 
-  /// 🔘 BOOK BUTTON
+  /// 🔘 BOOK BUTTON (DISABLED UNTIL FORM VALID)
   Widget _bookButton() {
     return SizedBox(
       width: double.infinity,
@@ -130,31 +189,42 @@ class _BookingState extends State<Booking> {
           backgroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-        onPressed: isLoading ? null : _bookFacility,
+        onPressed:
+        isFormValid && !isLoading ? _bookFacility : null,
         child: isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Text("Confirm Booking",
-            style: TextStyle(color: Colors.white)),
+            : const Text(
+          "Confirm Booking",
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
 
   /// 🔥 CORE BOOKING LOGIC
   Future<void> _bookFacility() async {
-    if (startTime == null || endTime == null) {
-      _showMsg("Select start & end time");
-      return;
-    }
-
     setState(() => isLoading = true);
 
     final user = FirebaseAuth.instance.currentUser!;
     final newStart = toMinutes(startTime!);
     final newEnd = toMinutes(endTime!);
+    final bookingsRef =
+    FirebaseFirestore.instance.collection('bookings');
 
-    final bookingsRef = FirebaseFirestore.instance.collection('bookings');
+    /// 🚫 BLOCKED DAY CHECK
+    final blockedSnap = await FirebaseFirestore.instance
+        .collection("BlockedDays")
+        .where("facilityId", isEqualTo: widget.facilityId)
+        .where("date", isEqualTo: selectedDateTs)
+        .get();
 
-    /// 1️⃣ CHECK: USER CAN BOOK ONLY ONCE PER DAY
+    if (blockedSnap.docs.isNotEmpty) {
+      setState(() => isLoading = false);
+      _showMsg("Facility unavailable on this date");
+      return;
+    }
+
+    /// 🚫 USER ONE BOOKING PER DAY
     final userBookingSnap = await bookingsRef
         .where('facilityId', isEqualTo: widget.facilityId)
         .where('userId', isEqualTo: user.uid)
@@ -163,11 +233,11 @@ class _BookingState extends State<Booking> {
 
     if (userBookingSnap.docs.isNotEmpty) {
       setState(() => isLoading = false);
-      _showMsg("You already have a booking for this day");
+      _showMsg("You already booked this day");
       return;
     }
 
-    /// 2️⃣ CHECK: TIME OVERLAP
+    /// 🚫 TIME OVERLAP
     final facilitySnap = await bookingsRef
         .where('facilityId', isEqualTo: widget.facilityId)
         .where('date', isEqualTo: selectedDateTs)
@@ -177,37 +247,29 @@ class _BookingState extends State<Booking> {
       final existStart = doc['startMin'];
       final existEnd = doc['endMin'];
 
-
       if (newStart < existEnd && newEnd > existStart) {
         setState(() => isLoading = false);
-        _showMsg("Selected time overlaps with another booking");
+        _showMsg("Time overlaps with another booking");
         return;
       }
     }
-    /// 🚫 PREVENT PAST TIME BOOKING
+
+    /// 🚫 PAST TIME CHECK
     final now = DateTime.now();
-
-// If selected date is today
-    final selected = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-    );
-
     final today = DateTime(now.year, now.month, now.day);
+    final selected = DateTime(
+        selectedDate.year, selectedDate.month, selectedDate.day);
 
     if (selected == today) {
       final nowMinutes = now.hour * 60 + now.minute;
-
       if (newStart <= nowMinutes) {
         setState(() => isLoading = false);
-        _showMsg("You cannot book a past time");
+        _showMsg("Cannot book past time");
         return;
       }
     }
 
-
-    /// 3️⃣ AUTO-CONFIRM BOOKING
+    /// ✅ SAVE BOOKING
     await bookingsRef.add({
       'facilityId': widget.facilityId,
       'userId': user.uid,
@@ -223,7 +285,7 @@ class _BookingState extends State<Booking> {
     Navigator.pop(context);
   }
 
-  /// 🚫 UNAVAILABLE TIMES
+  /// 🚫 SHOW UNAVAILABLE TIMES
   Widget _unavailableTimes() {
     return Expanded(
       child: StreamBuilder<QuerySnapshot>(
@@ -240,7 +302,8 @@ class _BookingState extends State<Booking> {
               return Card(
                 color: Colors.red.shade100,
                 child: ListTile(
-                  leading: const Icon(Icons.block, color: Colors.red),
+                  leading:
+                  const Icon(Icons.block, color: Colors.red),
                   title: Text(
                       "${_fmt(doc['startMin'])} - ${_fmt(doc['endMin'])}"),
                 ),
@@ -255,8 +318,7 @@ class _BookingState extends State<Booking> {
   String _fmt(int minutes) {
     final h = minutes ~/ 60;
     final m = minutes % 60;
-    final t = TimeOfDay(hour: h, minute: m);
-    return t.format(context);
+    return TimeOfDay(hour: h, minute: m).format(context);
   }
 
   Widget _buildCard({
@@ -281,4 +343,3 @@ class _BookingState extends State<Booking> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 }
-

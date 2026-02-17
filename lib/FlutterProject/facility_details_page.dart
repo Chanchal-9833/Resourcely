@@ -27,13 +27,17 @@ class FacilityDetailsPage extends StatelessWidget {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
-          return SingleChildScrollView(
+          return DefaultTextStyle(
+          style: const TextStyle(
+            fontFamily: "Mono",
+          ), child:SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
 
                 // 🖼️ Image
                 Card(
+
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -59,6 +63,7 @@ class FacilityDetailsPage extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+
                           ),
                         ),
                       ),
@@ -69,6 +74,7 @@ class FacilityDetailsPage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 _infoCard(
+
                   icon: Icons.info_outline,
                   title: "Description",
                   content: data['description'],
@@ -89,7 +95,7 @@ class FacilityDetailsPage extends StatelessWidget {
                   "${data['openTime']} – ${data['closeTime']}",
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
                 SizedBox(
                   width: double.infinity,
@@ -116,7 +122,7 @@ class FacilityDetailsPage extends StatelessWidget {
                 ),
               ],
             ),
-          );
+          ));
         },
       ),
     );
@@ -134,7 +140,7 @@ class FacilityDetailsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(5),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -147,12 +153,12 @@ class FacilityDetailsPage extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      fontWeight:  FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(content),
+                  Text(content,style:TextStyle(fontSize: 13)),
                 ],
               ),
             ),

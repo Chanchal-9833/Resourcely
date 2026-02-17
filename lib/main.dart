@@ -12,6 +12,7 @@ import "package:flutter_firebase/FlutterProject/Res_ProfilePage.dart";
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:flutter_firebase/FlutterProject/SplashPage.dart";
+import "package:flutter_firebase/FlutterProject/admin_dashboard.dart";
 import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
 // <<<<<<< HEAD
 // =======
@@ -46,8 +47,10 @@ class Myapp extends StatelessWidget {
 //       home:Homepage(),
 // =======
 // >>>>>>> origin/profile-merge-fix
+      theme:ThemeData(fontFamily: "Mono"),
       debugShowCheckedModeBanner: false,
-      home:Splashpage()
+      home:Splashpage(),
+
 
     );
   }

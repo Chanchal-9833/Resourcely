@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_firebase/FlutterProject/Res_ProfilePage.dart';
 import 'package:flutter_firebase/FlutterProject/SignInPage.dart';
 import 'package:flutter_firebase/FlutterProject/SplashPage.dart';
+import 'package:flutter_firebase/FlutterProject/auth_wrapper.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'resourcely_colors.dart';
@@ -21,6 +22,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final fullname=TextEditingController();
   final email=TextEditingController();
   final password=TextEditingController();
+
 
   // String num="";
   // void delete_user_account(){
@@ -77,6 +79,8 @@ class _ProfilePageState extends State<ProfilePage> {
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
+          final String role = data['role'] ?? "student";
+
 
           final String name = data['fullname'] ?? "User";
           final String email = data['email'] ?? "-";
@@ -140,7 +144,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 _infoTile(
                   icon: Icons.verified_user,
                   title: "Account Type",
-                  value: "Student",
+                  value: role,
                 ),
 
                 const SizedBox(height: 12),
@@ -255,7 +259,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) =>  Signinpage()),
+                        MaterialPageRoute(builder: (_) =>  const AuthWrapper()),
                             (route) => false,
                       );
                     },

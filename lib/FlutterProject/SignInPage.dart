@@ -168,18 +168,17 @@ class _SigninpageState extends State<Signinpage> {
                         return;
                       }
                       try{
-                        await FirebaseAuth.instance.signInWithEmailAndPassword(email: c_email, password: pass);
                         setState(() {
                           isloading=true;
                         });
+                        await FirebaseAuth.instance.signInWithEmailAndPassword(email: c_email, password: pass);
+
                         print("User Signed in Succesffully!");
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("User Signed In SuccessFully!",
                           style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                           ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
 
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                          return Homepage();
-                        }));
+
                         final user = FirebaseAuth.instance.currentUser;
 
                         final doc = await FirebaseFirestore.instance
