@@ -25,25 +25,21 @@ class _AdminDashboardState extends State<AdminDashboard>
   @override
   void initState() {
     super.initState();
+    runArchiveCleanup();
     fetchStats();
   }
 
   Future<void> fetchStats() async {
     setState(() => isLoading = true);
 
-    DateTime now = DateTime.now();
-    DateTime startDate = now.subtract(Duration(days: selectedDays));
-
     int total = 0;
     int turf = 0;
     int badminton = 0;
     int pc = 0;
 
-    /// 🔹 1. Turf & Badminton Collection
-    QuerySnapshot bookingSnapshot = await FirebaseFirestore.instance
-        .collection("bookings")  // your main collection
-        .where("createdAt", isGreaterThanOrEqualTo: startDate)
-        .get();
+    /// 🔹 LIVE Turf & Badminton (main collection only)
+    QuerySnapshot bookingSnapshot =
+    await FirebaseFirestore.instance.collection("bookings").get();
 
     for (var doc in bookingSnapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
@@ -54,11 +50,9 @@ class _AdminDashboardState extends State<AdminDashboard>
       if (data["facilityId"] == "badminton") badminton++;
     }
 
-    /// 🔹 2. PC Room Collection
-    QuerySnapshot pcSnapshot = await FirebaseFirestore.instance
-        .collection("PcRoom")
-        .where("date", isGreaterThanOrEqualTo: startDate)
-        .get();
+    /// 🔹 LIVE PC
+    QuerySnapshot pcSnapshot =
+    await FirebaseFirestore.instance.collection("PcRoom").get();
 
     pc = pcSnapshot.docs.length;
     total += pc;
@@ -71,6 +65,59 @@ class _AdminDashboardState extends State<AdminDashboard>
       isLoading = false;
     });
   }
+
+  Future<void> runArchiveCleanup() async {
+    try {
+      /// 🔥 Calculate 3 days ago from today (00:00)
+      DateTime now = DateTime.now();
+
+      DateTime threeDaysAgo = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 3));
+
+      Timestamp threeDaysAgoTimestamp =
+      Timestamp.fromDate(threeDaysAgo);
+
+      /// 🔹 Archive Facility Bookings
+      QuerySnapshot<Map<String, dynamic>> oldBookings =
+      await FirebaseFirestore.instance
+          .collection("bookings")
+          .where("date", isLessThanOrEqualTo: threeDaysAgoTimestamp)
+          .get();
+
+      for (var doc in oldBookings.docs) {
+        await FirebaseFirestore.instance
+            .collection("archive_bookings")
+            .doc(doc.id)
+            .set(doc.data());
+
+        await doc.reference.delete();
+      }
+
+      /// 🔹 Archive PC Room Bookings
+      QuerySnapshot<Map<String, dynamic>> oldPc =
+      await FirebaseFirestore.instance
+          .collection("PcRoom")
+          .where("date", isLessThanOrEqualTo: threeDaysAgoTimestamp)
+          .get();
+
+      for (var doc in oldPc.docs) {
+        await FirebaseFirestore.instance
+            .collection("archive_pcroom")
+            .doc(doc.id)
+            .set(doc.data());
+
+        await doc.reference.delete();
+      }
+
+      print("Archive Cleanup Completed (3 day rule using date)");
+    } catch (e) {
+      print("Archive Error: $e");
+    }
+  }
+
 
 
   Widget statsCard(
@@ -180,33 +227,7 @@ class _AdminDashboardState extends State<AdminDashboard>
 
 
 
-  Widget daySelector(int days) {
-    bool isSelected = selectedDays == days;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedDays = days;
-        });
-        fetchStats();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.teal : Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          "$days Days",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : Colors.black,
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,15 +245,8 @@ class _AdminDashboardState extends State<AdminDashboard>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// Day Filter Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                daySelector(7),
-                daySelector(15),
-                daySelector(30),
-              ],
-            ),
+
+
 
             const SizedBox(height: 20),
 

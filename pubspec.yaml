@@ -47,7 +47,7 @@ dependencies:
 
   #<<<<<<< HEAD
 #=======
-  rxdart: ^0.27.7
+  rxdart: ^0.28.0
 
 #>>>>>>> origin/profile-merge-fix
 

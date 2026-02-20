@@ -23,9 +23,36 @@ class _BookingState extends State<Booking> {
   void initState() {
     super.initState();
     _loadBlockedDates();
+    autoCompleteExpiredBookings(); // 🔥 new
   }
 
-  /// ✅ LOAD BLOCKED DATES CORRECTLY
+  /// 🔥 AUTO COMPLETE EXPIRED BOOKINGS
+  Future<void> autoCompleteExpiredBookings() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final nowMinutes = now.hour * 60 + now.minute;
+
+    final snap = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('status', isEqualTo: 'active')
+        .get();
+
+    for (var doc in snap.docs) {
+      final date = (doc['date'] as Timestamp).toDate();
+      final bookingDate =
+      DateTime(date.year, date.month, date.day);
+      final endMin = doc['endMin'];
+
+      if (bookingDate.isBefore(today) ||
+          (bookingDate == today && endMin <= nowMinutes)) {
+        await doc.reference.update({
+          'status': 'completed',
+          'completedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    }
+  }
+
   Future<void> _loadBlockedDates() async {
     final snap = await FirebaseFirestore.instance
         .collection("BlockedDays")
@@ -41,7 +68,6 @@ class _BookingState extends State<Booking> {
     });
   }
 
-  /// 🔹 Normalize selected date
   Timestamp get selectedDateTs {
     final d = DateTime(
       selectedDate.year,
@@ -53,7 +79,6 @@ class _BookingState extends State<Booking> {
 
   int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
-  /// ✅ FORM VALIDATION
   bool get isFormValid =>
       startTime != null &&
           endTime != null &&
@@ -87,35 +112,15 @@ class _BookingState extends State<Booking> {
     );
   }
 
-  /// 📅 DATE CARD (Blocked Dates Disabled + Snackbar Protection)
   Widget _dateCard() => _buildCard(
     icon: Icons.calendar_today,
     title: "Date",
     value:
     "${selectedDate.day}-${selectedDate.month}-${selectedDate.year}",
     onTap: () async {
-
-      // ✅ Ensure initial date is not blocked
-      DateTime safeInitialDate = selectedDate;
-      final normalizedSelected = DateTime(
-          selectedDate.year, selectedDate.month, selectedDate.day);
-
-      if (blockedDates.contains(normalizedSelected)) {
-        safeInitialDate = DateTime.now();
-
-        // Move forward until a non-blocked date is found
-        while (blockedDates.contains(DateTime(
-            safeInitialDate.year,
-            safeInitialDate.month,
-            safeInitialDate.day))) {
-          safeInitialDate =
-              safeInitialDate.add(const Duration(days: 1));
-        }
-      }
-
       final picked = await showDatePicker(
         context: context,
-        initialDate: safeInitialDate,
+        initialDate: selectedDate,
         firstDate: DateTime.now(),
         lastDate: DateTime.now().add(const Duration(days: 30)),
         selectableDayPredicate: (day) {
@@ -135,8 +140,6 @@ class _BookingState extends State<Booking> {
     },
   );
 
-
-  /// ⏰ START TIME
   Widget _startTimeCard() => _buildCard(
     icon: Icons.schedule,
     title: "Start Time",
@@ -153,7 +156,6 @@ class _BookingState extends State<Booking> {
     },
   );
 
-  /// ⏱ END TIME
   Widget _endTimeCard() => _buildCard(
     icon: Icons.timelapse,
     title: "End Time (max 2 hrs)",
@@ -180,7 +182,6 @@ class _BookingState extends State<Booking> {
     },
   );
 
-  /// 🔘 BOOK BUTTON (DISABLED UNTIL FORM VALID)
   Widget _bookButton() {
     return SizedBox(
       width: double.infinity,
@@ -201,7 +202,6 @@ class _BookingState extends State<Booking> {
     );
   }
 
-  /// 🔥 CORE BOOKING LOGIC
   Future<void> _bookFacility() async {
     setState(() => isLoading = true);
 
@@ -211,7 +211,7 @@ class _BookingState extends State<Booking> {
     final bookingsRef =
     FirebaseFirestore.instance.collection('bookings');
 
-    /// 🚫 BLOCKED DAY CHECK
+    /// 🚫 BLOCKED DAY CHECK (Server Side Safety)
     final blockedSnap = await FirebaseFirestore.instance
         .collection("BlockedDays")
         .where("facilityId", isEqualTo: widget.facilityId)
@@ -229,6 +229,7 @@ class _BookingState extends State<Booking> {
         .where('facilityId', isEqualTo: widget.facilityId)
         .where('userId', isEqualTo: user.uid)
         .where('date', isEqualTo: selectedDateTs)
+        .where('status', isEqualTo: 'active')
         .get();
 
     if (userBookingSnap.docs.isNotEmpty) {
@@ -237,10 +238,11 @@ class _BookingState extends State<Booking> {
       return;
     }
 
-    /// 🚫 TIME OVERLAP
+    /// 🚫 TIME OVERLAP (Only Active Bookings)
     final facilitySnap = await bookingsRef
         .where('facilityId', isEqualTo: widget.facilityId)
         .where('date', isEqualTo: selectedDateTs)
+        .where('status', isEqualTo: 'active')
         .get();
 
     for (var doc in facilitySnap.docs) {
@@ -257,8 +259,8 @@ class _BookingState extends State<Booking> {
     /// 🚫 PAST TIME CHECK
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final selected = DateTime(
-        selectedDate.year, selectedDate.month, selectedDate.day);
+    final selected =
+    DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
 
     if (selected == today) {
       final nowMinutes = now.hour * 60 + now.minute;
@@ -276,8 +278,9 @@ class _BookingState extends State<Booking> {
       'date': selectedDateTs,
       'startMin': newStart,
       'endMin': newEnd,
-      'status': 'confirmed',
+      'status': 'active',
       'createdAt': FieldValue.serverTimestamp(),
+      'completedAt': null,
     });
 
     setState(() => isLoading = false);
@@ -285,7 +288,7 @@ class _BookingState extends State<Booking> {
     Navigator.pop(context);
   }
 
-  /// 🚫 SHOW UNAVAILABLE TIMES
+
   Widget _unavailableTimes() {
     return Expanded(
       child: StreamBuilder<QuerySnapshot>(
@@ -293,6 +296,7 @@ class _BookingState extends State<Booking> {
             .collection('bookings')
             .where('facilityId', isEqualTo: widget.facilityId)
             .where('date', isEqualTo: selectedDateTs)
+            .where('status', isEqualTo: 'active') // ✅ FIXED
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const SizedBox();

@@ -4,6 +4,8 @@ import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 import "package:flutter_firebase/FlutterProject/HomePage.dart";
 import "package:flutter_firebase/FlutterProject/SignInPage.dart";
+import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
+import "package:flutter_firebase/FlutterProject/navigationBar.dart";
 import "package:google_sign_in/google_sign_in.dart";
 
 class Signuppage extends StatefulWidget {
@@ -101,7 +103,7 @@ class _SignuppageState extends State<Signuppage> {
 
     Timer(const Duration(seconds: 2), () {
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => Homepage()));
+          context, MaterialPageRoute(builder: (_) => AuthWrapper()));
     });
   }
 

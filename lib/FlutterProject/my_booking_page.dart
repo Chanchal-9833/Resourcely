@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import './resourcely_colors.dart';
-// import 'package:rxdart/rxdart.dart';
+import 'package:rxdart/rxdart.dart';
 
 
 class MyBookingsPage extends StatelessWidget {
@@ -116,6 +116,7 @@ class MyBookingsPage extends StatelessWidget {
   /// Properly merge Facility + PC bookings streams
   Stream<List<Map<String, dynamic>>> _mergedBookings(
       String uid, BuildContext context) {
+
     final facilityStream = FirebaseFirestore.instance
         .collection('bookings')
         .where('userId', isEqualTo: uid)
@@ -123,64 +124,66 @@ class MyBookingsPage extends StatelessWidget {
 
     final pcStream = FirebaseFirestore.instance
         .collection('PcRoom')
-        .where('userId', isEqualTo: uid)
+        .where('uid', isEqualTo: uid)
         .snapshots();
 
-    return facilityStream.asyncMap((facilitySnap) async {
-      final pcSnap = await FirebaseFirestore.instance
-          .collection('PcRoom')
-          .where('userId', isEqualTo: uid)
-          .get();
+    return Rx.combineLatest2<
+        QuerySnapshot<Map<String, dynamic>>,
+        QuerySnapshot<Map<String, dynamic>>,
+        List<Map<String, dynamic>>>(
+      facilityStream,
+      pcStream,
+          (facilitySnap, pcSnap) {
 
-      final List<Map<String, dynamic>> merged = [];
+        final List<Map<String, dynamic>> merged = [];
 
-      /// Facility bookings
-      for (var d in facilitySnap.docs) {
-        final data = d.data();
+        /// Facility bookings
+        for (var d in facilitySnap.docs) {
+          final data = d.data();
+          if (data['date'] == null) continue;
 
-        if (data['date'] == null) continue;
+          final date = (data['date'] as Timestamp).toDate();
+          final endDT = buildEndDateTime(date, data['endMin']);
 
-        final date = (data['date'] as Timestamp).toDate();
-        final endDT = buildEndDateTime(date, data['endMin']);
+          merged.add({
+            'id': d.id,
+            'collection': 'bookings',
+            'title': data['facilityId']?.toString().toUpperCase() ?? '',
+            'date': date,
+            'time':
+            "${minToTime(data['startMin']).format(context)} - ${minToTime(data['endMin']).format(context)}",
+            'status': data['status'] ?? 'active',
+            'endDateTime': endDT,
+          });
+        }
 
-        merged.add({
-          'id': d.id,
-          'collection': 'bookings',
-          'title': data['facilityId']?.toString().toUpperCase() ?? '',
-          'date': date,
-          'time':
-          "${minToTime(data['startMin']).format(context)} - ${minToTime(data['endMin']).format(context)}",
-          'status': data['status'] ?? 'active',
-          'endDateTime': endDT,
-        });
-      }
+        /// PC bookings
+        for (var d in pcSnap.docs) {
+          final data = d.data();
+          if (data['date'] == null) continue;
 
-      /// PC bookings
-      for (var d in pcSnap.docs) {
-        final data = d.data();
+          final date = (data['date'] as Timestamp).toDate();
+          final endDT = buildEndDateTime(date, data['endTime']);
 
-        if (data['date'] == null) continue;
+          merged.add({
+            'id': d.id,
+            'collection': 'PcRoom',
+            'title': "PC ${data['pcnumber'] ?? ''}",
+            'date': date,
+            'time': "${data['startTime']} - ${data['endTime']}",
+            'status': data['status'] ?? 'active',
+            'endDateTime': endDT,
+          });
+        }
 
-        final date = (data['date'] as Timestamp).toDate();
-        final endDT = buildEndDateTime(date, data['endTime']);
+        merged.sort(
+                (a, b) => b['endDateTime'].compareTo(a['endDateTime']));
 
-        merged.add({
-          'id': d.id,
-          'collection': 'PcRoom',
-          'title': "PC ${data['pcnumber'] ?? ''}",
-          'date': date,
-          'time': "${data['startTime']} - ${data['endTime']}",
-          'status': data['status'] ?? 'active',
-          'endDateTime': endDT,
-        });
-      }
-
-      merged.sort(
-              (a, b) => b['endDateTime'].compareTo(a['endDateTime']));
-
-      return merged;
-    });
+        return merged;
+      },
+    );
   }
+
 
   /// Section title
   Widget _sectionTitle(String text) {
