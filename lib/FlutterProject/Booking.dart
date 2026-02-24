@@ -16,7 +16,7 @@ class _BookingState extends State<Booking> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay? startTime;
   TimeOfDay? endTime;
-  Set<DateTime> blockedDates = {};
+  Map<DateTime, String> blockedDates = {};
   bool isLoading = false;
 
   @override
@@ -60,11 +60,14 @@ class _BookingState extends State<Booking> {
         .get();
 
     setState(() {
-      blockedDates = snap.docs.map((doc) {
-        final ts = doc['date'] as Timestamp;
-        final d = ts.toDate();
-        return DateTime(d.year, d.month, d.day);
-      }).toSet();
+      blockedDates = {
+        for (var doc in snap.docs)
+          DateTime(
+            (doc["date"] as Timestamp).toDate().year,
+            (doc["date"] as Timestamp).toDate().month,
+            (doc["date"] as Timestamp).toDate().day,
+          ): doc["reason"] ?? "No reason provided"
+      };
     });
   }
 
@@ -81,17 +84,14 @@ class _BookingState extends State<Booking> {
 
   bool get isFormValid =>
       startTime != null &&
-          endTime != null &&
-          !blockedDates.contains(
-            DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
-          );
+          endTime != null;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
       appBar: AppBar(
-        title: const Text("Select Time"),
+        title: const Text("Select Time",style:TextStyle(color:Colors.white)),
         backgroundColor: AppColors.primary,
         centerTitle: true,
       ),
@@ -123,14 +123,20 @@ class _BookingState extends State<Booking> {
         initialDate: selectedDate,
         firstDate: DateTime.now(),
         lastDate: DateTime.now().add(const Duration(days: 30)),
-        selectableDayPredicate: (day) {
-          final normalized =
-          DateTime(day.year, day.month, day.day);
-          return !blockedDates.contains(normalized);
-        },
       );
 
       if (picked != null) {
+        final normalized =
+        DateTime(picked.year, picked.month, picked.day);
+
+        // 🔥 Check blocked date AFTER selection
+        if (blockedDates.containsKey(normalized)) {
+          final reason = blockedDates[normalized]!;
+
+          _showMsg("Facility unavailable: $reason");
+          return;
+        }
+
         setState(() {
           selectedDate = picked;
           startTime = null;
@@ -139,7 +145,6 @@ class _BookingState extends State<Booking> {
       }
     },
   );
-
   Widget _startTimeCard() => _buildCard(
     icon: Icons.schedule,
     title: "Start Time",
@@ -344,6 +349,9 @@ class _BookingState extends State<Booking> {
 
   void _showMsg(String msg) {
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+        .showSnackBar(SnackBar(content: Text(msg),
+      backgroundColor: Colors.red,
+      behavior: SnackBarBehavior.floating,)
+    );
   }
 }

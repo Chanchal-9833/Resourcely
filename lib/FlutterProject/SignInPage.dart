@@ -7,6 +7,7 @@ import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/foundation.dart";
+import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
 class Signinpage extends StatefulWidget {
@@ -178,6 +179,9 @@ class _SigninpageState extends State<Signinpage> {
                           style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
                           ,backgroundColor: Colors.green,behavior: SnackBarBehavior.floating,),);
 
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
+                          return AuthWrapper();
+                        }));
 
                         final user = FirebaseAuth.instance.currentUser;
 
@@ -222,6 +226,11 @@ class _SigninpageState extends State<Signinpage> {
                         }
 
 
+                      }
+                      finally{
+                        setState(() {
+                          isloading = false;
+                        });
                       }
                     },
                     style: ElevatedButton.styleFrom(

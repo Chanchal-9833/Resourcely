@@ -13,6 +13,7 @@ import "package:flutter_firebase/FlutterProject/SignInPage.dart";
 import "package:flutter_firebase/FlutterProject/SignupPage.dart";
 import "package:flutter_firebase/FlutterProject/SplashPage.dart";
 import "package:flutter_firebase/FlutterProject/admin_dashboard.dart";
+import "package:flutter_firebase/FlutterProject/admin_side_total_bookings.dart";
 import "package:flutter_firebase/FlutterProject/auth_wrapper.dart";
 // <<<<<<< HEAD
 // =======

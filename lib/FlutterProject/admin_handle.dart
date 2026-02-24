@@ -117,7 +117,7 @@ class _AdminHandleState extends State<AdminHandle> {
               DropdownButtonFormField(
                 value: selectedPc,
                 items: List.generate(
-                  10,
+                  4,
                       (index) => DropdownMenuItem(
                     value: "pc_${index + 1}",
                     child: Text("PC ${index + 1}"),
