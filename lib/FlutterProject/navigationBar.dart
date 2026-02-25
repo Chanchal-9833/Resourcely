@@ -3,6 +3,7 @@ import 'package:flutter_firebase/FlutterProject/HomePage.dart';
 import 'package:flutter_firebase/FlutterProject/admin_dashboard.dart';
 import 'package:flutter_firebase/FlutterProject/admin_handle.dart';
 import 'package:flutter_firebase/FlutterProject/admin_report.dart';
+import 'package:flutter_firebase/FlutterProject/admin_side_total_bookings.dart';
 import 'package:flutter_firebase/FlutterProject/profile_page.dart';
 
 import 'my_booking_page.dart';
@@ -30,6 +31,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
     if (widget.role == "Admin") {
       pages = const [
         AdminDashboard(),
+        AdminTodayBookingsPage(),
         AdminHandle(),
         AdminReportsPage(),
         ProfilePage(),
@@ -80,9 +82,14 @@ class _BottomNavigationState extends State<BottomNavigation> {
             label: "Dash",
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.book_online),
+            label: "bookings",
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.admin_panel_settings),
             label: "Admin",
           ),
+
           BottomNavigationBarItem(
             icon: Icon(Icons.report),
             label: "Report",

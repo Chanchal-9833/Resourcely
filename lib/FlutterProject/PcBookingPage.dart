@@ -154,6 +154,32 @@ class _PcbookingpageState extends State<Pcbookingpage> {
     return null;
   }
 
+  Map<DateTime, String> blockedDates = {};
+
+  Future<bool> validateDate(DateTime picked) async {
+    DateTime normalized = DateTime(picked.year, picked.month, picked.day);
+
+    if (!mounted) return false;
+
+    if (blockedDates.containsKey(normalized)) {
+      String reason = blockedDates[normalized]!;
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("PC unavailable: $reason"),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+
   // var err_msg;
 
   @override
@@ -165,6 +191,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    _loadBlockedDates();
     if (widget.minBookedTime != null &&
         widget.maxBookedTime != null) {
       bookedStartMin = _timeStringToMinutes(widget.minBookedTime!);
@@ -179,6 +206,24 @@ class _PcbookingpageState extends State<Pcbookingpage> {
     mdept_err.add(null);
     msid_err.add(null);
 
+  }
+
+  Future<void> _loadBlockedDates() async {
+    final snap = await FirebaseFirestore.instance
+        .collection("BlockedDays")
+        .where("facilityId", isEqualTo: "pc_${widget.pcnumber}")
+        .get();
+
+    setState(() {
+      blockedDates = {
+        for (var doc in snap.docs)
+          DateTime(
+            (doc["date"] as Timestamp).toDate().year,
+            (doc["date"] as Timestamp).toDate().month,
+            (doc["date"] as Timestamp).toDate().day,
+          ): doc["reason"] ?? "No reason provided"
+      };
+    });
   }
   @override
   Widget build(BuildContext context) {
@@ -280,7 +325,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                               padding: WidgetStatePropertyAll(EdgeInsetsGeometry.all(10))
                           ),
                               onPressed: () async {
-                                DateTime now = DateTime.now();
+                                 DateTime now = DateTime.now();
                                 DateTime dayAfterTomorrow = now.add(const Duration(days: 2));
 
                                 DateTime? datePicked = await showDatePicker(
@@ -297,9 +342,16 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                                     dayAfterTomorrow.month,
                                     dayAfterTomorrow.day,
                                   ),
+
+
+
+
                                 );
 
                                 if (datePicked != null) {
+                                  bool isValid = await validateDate(datePicked);
+
+                                  if (!isValid) return;
                                   setState(() {
                                     selectedDate = datePicked;
                                     startTime = null;   // reset times
