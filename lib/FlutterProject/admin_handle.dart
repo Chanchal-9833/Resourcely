@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'resourcely_colors.dart';
 
@@ -53,6 +56,10 @@ class _AdminHandleState extends State<AdminHandle> {
       selectedDate!.day,
     );
 
+    // if (selectedFacility == "pc") {
+    //   await pc_blocking();
+    // }
+
     await FirebaseFirestore.instance.collection("BlockedDays").add({
       "facilityId": selectedFacility == "pc" ? selectedPc : selectedFacility,
       "date": Timestamp.fromDate(normalizedDate), // ✅ FIXED
@@ -63,6 +70,7 @@ class _AdminHandleState extends State<AdminHandle> {
       "createdAt": FieldValue.serverTimestamp(),
     });
 
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Facility Blocked Successfully"),
@@ -70,13 +78,33 @@ class _AdminHandleState extends State<AdminHandle> {
       ),
     );
 
+
     setState(() {
       selectedDate = null;
       selectedPc = null;
       reasonController.clear();
     });
   }
-
+  // Future<void> pc_blocking() async {
+  //   if (selectedDate == null || selectedPc == null) {
+  //     print("Cannot save. Date or PC missing.");
+  //     return;
+  //   }
+  //
+  //   final prefs = await SharedPreferences.getInstance();
+  //
+  //   final pcBlocking = {
+  //     "date": selectedDate!.toIso8601String(),
+  //     "pcnumber": selectedPc!,
+  //     "reason": reasonController.text.trim()
+  //   };
+  //
+  //   String jsonData = jsonEncode(pcBlocking);
+  //
+  //   await prefs.setString("pc-blocking", jsonData);
+  //
+  //   print("Saved: $jsonData");
+  // }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

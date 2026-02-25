@@ -1,8 +1,11 @@
 // import "dart:io";
 
+import "dart:convert";
+
 import "package:cloud_firestore/cloud_firestore.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
+import "package:shared_preferences/shared_preferences.dart";
 
 import "PcBookingPage.dart";
 //
@@ -115,6 +118,26 @@ class _PcroomcoverpageState extends State<Pcroomcoverpage> {
       print(err);
 
     }
+  }
+  void getPcBlocking() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    String? jsonData = prefs.getString("pc-blocking");
+
+    if (jsonData != null) {
+      Map<String, dynamic> data = jsonDecode(jsonData);
+      print(data);
+      // print(data["date"]);
+      // print(data["pcnumber"]);
+      // print(data["reason"]);
+    }
+  }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getPcBlocking();
+
   }
   @override
   Widget build(BuildContext context) {
