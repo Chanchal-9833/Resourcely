@@ -225,6 +225,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
       };
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -302,7 +303,7 @@ class _PcbookingpageState extends State<Pcbookingpage> {
               ),
               SizedBox(height: 30,),
               Container(
-                height: selectedDate!=null && startTime!=null && endTime!=null? 190 :140,
+                height: selectedDate!=null && startTime!=null && endTime!=null? 200 :150,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
@@ -630,7 +631,8 @@ class _PcbookingpageState extends State<Pcbookingpage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async{
+                  onPressed: () async {
+
                     setState(() {
                       hasError = false;
                       timeError = null;
@@ -638,92 +640,153 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                     });
 
                     membersInfo.clear();
-                    for(int i=0;i<membersCount;i++){
-                      setState(() {
-                        if(mname[i].text.trim().isEmpty){
-                          mname_err[i]="Member ${i+1} Name Required";
-                          hasError=true;
-                        }
-                        if(mid[i].text.trim().isEmpty){
-                          mid_err[i]="Student Id of Member ${i+1} Required";
-                          hasError=true;
-                        }
-                        if(mid[i].text.trim().length!=7 || !RegExp(r'^\d+$').hasMatch(mid[i].text)){
-                          msid_err[i]="Student Id Must be of 7 Letters and It Must Contain only Numbers";
-                          hasError=true;
-                        }
-                        if(mdept[i].text.trim().isEmpty){
-                          mdept_err[i]="Department Required for Member ${i+1}";
-                          hasError=true;
-                        }
-                        for(int j=0;j<mid.length;j++){
-                          for (int j = i + 1; j < mid.length; j++) {
-                            if (mid[i].text
-                                .trim()
-                                .isNotEmpty &&
-                                mid[i].text.trim() == mid[j].text.trim())
-                            {
-                              mid_err[i]="Duplicate Sid";
-                              mid_err[j]="Duplicate Sid";
-                            }
-                          }
-                        }
 
-                        if(startTime==null || endTime==null){
-                          timeError="Time Required";
-                          hasError=true;
+                    for (int i = 0; i < membersCount; i++) {
+
+                      if (mname[i].text.trim().isEmpty) {
+                        mname_err[i] = "Member ${i + 1} Name Required";
+                        hasError = true;
+                      }
+
+                      if (mid[i].text.trim().isEmpty) {
+                        mid_err[i] = "Student Id of Member ${i + 1} Required";
+                        hasError = true;
+                      }
+
+                      if (mid[i].text.trim().isNotEmpty &&
+                          (mid[i].text.trim().length != 7 ||
+                              !RegExp(r'^\d+$').hasMatch(mid[i].text))) {
+                        msid_err[i] =
+                        "Student Id Must be of 7 Letters and It Must Contain only Numbers";
+                        hasError = true;
+                      }
+
+                      if (mdept[i].text.trim().isEmpty) {
+                        mdept_err[i] = "Department Required for Member ${i + 1}";
+                        hasError = true;
+                      }
+
+                      // ✅ Proper duplicate check
+                      for (int j = i + 1; j < membersCount; j++) {
+                        if (mid[i].text.trim().isNotEmpty &&
+                            mid[i].text.trim() == mid[j].text.trim()) {
+                          mid_err[i] = "Duplicate Sid";
+                          mid_err[j] = "Duplicate Sid";
+                          hasError = true;
                         }
-                        if(selectedDate==null){
-                          dateError="Date Required";
-                          hasError=true;
-                        }
-
-                      });
-
-
+                      }
                     }
+
+                    if (startTime == null || endTime == null) {
+                      timeError = "Time Required";
+                      hasError = true;
+                    }
+
+                    if (selectedDate == null) {
+                      dateError = "Date Required";
+                      hasError = true;
+                    }
+
+                    if (hasError) {
+                      setState(() {}); // refresh UI
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "All Fields are Required.!",
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: "Mono",
+                                color: Colors.white),
+                          ),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return; // 🔴 STOP HERE — no loader, no booking
+                    }
+
+                    // ✅ Start loader ONLY after validation success
                     setState(() {
-                      loading=true;
+                      loading = true;
                     });
-                    if(hasError){
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("All Fields are Required.!",
-                        style: TextStyle(fontSize:16,fontFamily: "Mono",color: Colors.white),)
-                        ,backgroundColor: Colors.red,behavior: SnackBarBehavior.floating,),);
-                      loading=false;
-                      return;
-                    }
-                    else{
+
+                    try {
+
                       for (int i = 0; i < membersCount; i++) {
-                        setState(() {
-                          membersInfo.add({
-                            "name": mname[i].text.trim(),
-                            "studentId": mid[i].text.trim(),
-                            "department": mdept[i].text.trim(),
-                          });
+                        membersInfo.add({
+                          "name": mname[i].text.trim(),
+                          "studentId": mid[i].text.trim(),
+                          "department": mdept[i].text.trim(),
                         });
                       }
-                      final User? user =await FirebaseAuth.instance.currentUser;
+
+                      final User? user = FirebaseAuth.instance.currentUser;
+
                       if (user == null) {
-                        print("User not logged in");
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context){
-                          return Signinpage();
-                        }));
+                        setState(() { loading = false; });
+                        Navigator.pushReplacement(context,
+                            MaterialPageRoute(builder: (_) => Signinpage()));
                         return;
                       }
+
                       String userEmail = user.email ?? "";
                       String userUid = user.uid;
+
                       final querySnapshot = await FirebaseFirestore.instance
                           .collection("Users")
                           .where("email", isEqualTo: userEmail)
                           .get();
 
                       if (querySnapshot.docs.isEmpty) {
-                        print("User document not found");
+                        setState(() { loading = false; });
                         return;
                       }
 
                       String userFullName =
                           querySnapshot.docs.first.data()['fullname'] ?? "";
+
+                      // 🔥 SEND OTP FIRST
+                      final prefs = await SharedPreferences.getInstance();
+                      String? em = prefs.getString("email");
+                      otp_email = em ?? "";
+
+                      final url = Uri.parse('http://localhost:8000/user/send-slot-otp');
+
+                      final response = await http.post(
+                        url,
+                        headers: {"Content-Type": "application/json"},
+                        body: jsonEncode({
+                          "email": userEmail,
+                          "pcnumber": widget.pcnumber,
+                          "bookingDate": DateFormat("yyyy-MM-dd").format(selectedDate!),
+                          "startTime": formatTimeOfDay(startTime!),
+                          "endTime": formatTimeOfDay(endTime!),
+                        }),
+                      );
+
+                      if (response.statusCode != 200) {
+                        setState(() { loading = false; });
+                        print(response.body);
+                        print(response.statusCode);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "Failed to send Otp!",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontFamily: "Mono"),
+                            ),
+                            backgroundColor: Colors.red,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return; // 🔴 STOP — no booking
+                      }
+
+                      // ✅ BOOK ONLY IF OTP SUCCESS
                       await FirebaseFirestore.instance
                           .collection("PcRoom")
                           .doc("${DateTime.now()}")
@@ -734,86 +797,64 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                         "startTime": startTime!.format(context),
                         "endTime": endTime!.format(context),
                         "status": "booked",
-                        "pcnumber":widget.pcnumber,
-                        "user_name":userFullName,
-                        "uid":userUid,
-                        "user_email":userEmail
-
+                        "pcnumber": widget.pcnumber,
+                        "user_name": userFullName,
+                        "uid": userUid,
+                        "user_email": userEmail
                       });
-                      final prefs=await SharedPreferences.getInstance();
-                      String? em=prefs.getString("email");
-                      setState(() {
-                        otp_email=em!;
-                        print(otp_email);
-                      });
+                      // final prefss=await SharedPreferences.getInstance();
+                      // prefss.setBool("close", true);
 
-                      final url = Uri.parse('http://localhost:8000/user/send-otp');
-                      try {
-                        final response = await http.post(
-                          url,
-                          headers: {"Content-Type": "application/json"},
-                          body: jsonEncode({
-                            "email": otp_email
-                          }),
-                        );
+                      setState(() { loading = false; });
 
-                        print(jsonDecode(response.body));
-                        // Uncomment if you want to parse response
-                        if (response.statusCode == 200) {
-                          final data = jsonDecode(response.body);
-                          print('OTP sent successfully: ${data['msg']}');
-                          loading=false;
-                          showDialog(context: context, builder: (_)=>AlertDialog(
-                            title: Container(child: Icon(Icons.check_circle,color: Colors.green,size: 100,),)
-                            ,
-                            content: Column(children: [
-                              Text("Booking SuccessFull.",style: TextStyle(fontSize: 18,fontWeight: FontWeight.w600),
-                              ),
-                              SizedBox(height: 10,),
-                              Text("Otp has been sent to User's Email. \n      Verify Later at Check-in.",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w400))
-                            ],),
-                            constraints: BoxConstraints(maxHeight: 300,maxWidth: 300,minHeight: 300,minWidth: 300),
-                          ));
-
-                          Timer(Duration(seconds: 3), () {
-                            Navigator.pushReplacement(context,MaterialPageRoute(builder:(context){
-                              return Homepage();
-                            }));
-                          });
-                        } else {
-                          final data = jsonDecode(response.body);
-                          setState(() {
-                          });
-                          print('Error: ${data['message'] ?? 'Unknown error'}');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "Failed to send Otp!",
-                                style: TextStyle(fontSize: 16, color: Colors.white,fontFamily: "Mono"),
-                              ),
-                              backgroundColor: Colors.red,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        print('Error sending OTP: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              "Failed to send Otp!",
-                              style: TextStyle(fontSize: 16, color: Colors.white,fontFamily: "Mono"),
-                            ),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: Icon(Icons.check_circle,
+                              color: Colors.green, size: 100),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text("Booking Successful.",
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600)),
+                              SizedBox(height: 10),
+                              Text(
+                                "Otp has been sent to User's Email.\nVerify Later at Check-in.",
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w400),
+                              )
+                            ],
                           ),
-                        );
-                      }
+                        ),
+                      );
 
+                      Timer(Duration(seconds: 3), () {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => Homepage()));
+                      });
 
+                    } catch (e) {
 
+                      setState(() { loading = false; });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Something went wrong!",
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontFamily: "Mono"),
+                          ),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
                     }
-
                   },
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,

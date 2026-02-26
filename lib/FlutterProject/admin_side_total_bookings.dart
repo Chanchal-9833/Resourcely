@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_firebase/FlutterProject/CurrentFacilityUsing.dart';
+import 'package:flutter_firebase/FlutterProject/Email_Signin_Otp.dart';
 import 'package:rxdart/rxdart.dart';
+
+import 'Admin_otp_verification.dart';
 
 class AdminTodayBookingsPage extends StatefulWidget {
   const AdminTodayBookingsPage({super.key});
@@ -59,12 +63,11 @@ class _AdminTodayBookingsPageState
           merged.add({
             'id': d.id,
             'collection': 'bookings',
-            'title':
-            data['facilityId']?.toString().toUpperCase() ?? '',
+            'title': data['facilityId']?.toString().toUpperCase() ?? '',
             'name': data['userName'] ?? '',
+            'email': data['user_email'] ?? '',   // ✅ ADD THIS
             'date': (data['date'] as Timestamp).toDate(),
-            'time':
-            "${data['startMin']} - ${data['endMin']}",
+            'time': "${data['startMin']} - ${data['endMin']}",
             'status': data['status'] ?? 'active',
           });
         }
@@ -73,14 +76,28 @@ class _AdminTodayBookingsPageState
         for (var d in pcSnap.docs) {
           final data = d.data();
 
+          List members = [];
+
+          if (data['Members_Info'] is Map) {
+            members = (data['Members_Info'] as Map).values.toList();
+          } else if (data['Members_Info'] is List) {
+            members = data['Members_Info'];
+          }
+
+          String memberDetails = members.map((m) {
+            String name = m['name'] ?? '';
+            String sid = m['studentId'] ?? '';
+            return "$name ($sid)";
+          }).join(', ');
+
           merged.add({
             'id': d.id,
             'collection': 'PcRoom',
             'title': "PC ${data['pcnumber']}",
-            'name': data['userName'] ?? '',
+            'name': memberDetails.isEmpty ? "No Members" : memberDetails,
+            'email': data['user_email'] ?? '',   // ✅ ADD THIS
             'date': (data['date'] as Timestamp).toDate(),
-            'time':
-            "${data['startTime']} - ${data['endTime']}",
+            'time': "${data['startTime']} - ${data['endTime']}",
             'status': data['status'] ?? 'active',
           });
         }
@@ -120,6 +137,24 @@ class _AdminTodayBookingsPageState
               },
             ),
           ),
+          Container(
+            padding: EdgeInsets.only(left: 15,right: 15),
+          child: ElevatedButton(style:ButtonStyle(
+            backgroundColor: WidgetStatePropertyAll( Color(0xFF00796B)),
+            foregroundColor: WidgetStatePropertyAll(Colors.white),
+            padding: WidgetStatePropertyAll(EdgeInsets.all(20)),
+            shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)))
+          ),onPressed: (){
+            Navigator.push(context, MaterialPageRoute(builder: (context){
+              return Currentfacilityusing();
+            }));
+          }, child: Row(
+            children: [
+              Text("Current Facility users"),
+              SizedBox(width: 3,),
+              Icon(Icons.login_outlined)
+            ],
+          ))),
 
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -203,6 +238,7 @@ class _AdminTodayBookingsPageState
             Text(
                 "Date: ${b['date'].day}-${b['date'].month}-${b['date'].year}"),
             Text("Name: ${b['name']}"),
+            Text("Email: ${b['email']}"),
             Text("Time: ${b['time']}"),
             Text(
               "Status: ${b['status']}",
@@ -215,6 +251,9 @@ class _AdminTodayBookingsPageState
           ],
         ),
         onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context){
+            return AdminOtpVerification(booking: b);
+          }));
           // Next step → OTP Check-in page
         },
       ),

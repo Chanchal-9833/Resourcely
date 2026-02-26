@@ -137,49 +137,69 @@ class _HomepageState extends State<Homepage> {
 
     String uid = user.uid;
 
-    DateTime now = DateTime.now();
-    DateTime todayOnly = DateTime(now.year, now.month, now.day);
-
     bookingListener = FirebaseFirestore.instance
         .collection("PcRoom")
         .where("uid", isEqualTo: uid)
         .snapshots()
         .listen((snapshot) {
-      bool bookedToday = false;
+      bool shouldBlock = false;
+
+      DateTime now = DateTime.now();
+      // DateTime now = DateTime(2026, 2, 27, 13, 02);
 
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        if (!data.containsKey("date")) continue;
+
+        if (!data.containsKey("date") ||
+            !data.containsKey("endTime")) continue;
 
         DateTime bookingDate =
         (data["date"] as Timestamp).toDate();
 
-        DateTime bookingOnly = DateTime(
+        String endTimeString = data["endTime"];
+
+        DateTime parsedEnd =
+        DateFormat("hh:mm a").parse(endTimeString);
+
+        DateTime bookingEndDateTime = DateTime(
           bookingDate.year,
           bookingDate.month,
           bookingDate.day,
+          parsedEnd.hour,
+          parsedEnd.minute,
         );
 
-        if (bookingOnly == todayOnly) {
-          bookedToday = true;
+        // 🔥 If booking is still active → block
+        if (now.isBefore(bookingEndDateTime)) {
+          shouldBlock = true;
           break;
         }
       }
 
       if (mounted) {
         setState(() {
-          already_booked = bookedToday;
+          already_booked = shouldBlock;
         });
       }
     });
   }
-
-
+  // void get_blocking() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   bool close = prefs.getBool("close") ?? false;
+  //
+  //   if (mounted) {
+  //     setState(() {
+  //       already_booked = close;
+  //     });
+  //   }
+  // }
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     listenUserBooking();
+    // get_blocking();
+
   }
   @override
   void dispose() {
@@ -450,7 +470,8 @@ class _HomepageState extends State<Homepage> {
                         return Pcroomcoverpage();
                       }));
                     }, child:Text("Proceed to Book->",style: TextStyle(fontFamily: "Mono",fontSize: 18,color: Colors.white))),
-              )
+              ),
+              SizedBox(height:20)
 
             ],
           ),
