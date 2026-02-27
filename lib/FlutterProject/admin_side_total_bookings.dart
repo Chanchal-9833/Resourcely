@@ -59,15 +59,21 @@ class _AdminTodayBookingsPageState
         /// Facility bookings
         for (var d in facilitySnap.docs) {
           final data = d.data();
+          final email = data['user_email'] ?? '';
+
+          int startMin = data['startMin'] ?? 0;
+          int endMin = data['endMin'] ?? 0;
+
+          final startTime = minToTime(startMin).format(context);
+          final endTime = minToTime(endMin).format(context);
 
           merged.add({
             'id': d.id,
             'collection': 'bookings',
             'title': data['facilityId']?.toString().toUpperCase() ?? '',
-            'name': data['userName'] ?? '',
-            'email': data['user_email'] ?? '',   // ✅ ADD THIS
-            'date': (data['date'] as Timestamp).toDate(),
-            'time': "${data['startMin']} - ${data['endMin']}",
+            'email': email,
+            'date': (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            'time': "$startTime - $endTime",
             'status': data['status'] ?? 'active',
           });
         }
@@ -105,6 +111,22 @@ class _AdminTodayBookingsPageState
         return merged;
       },
     );
+  }
+  TimeOfDay minToTime(int min) {
+    return TimeOfDay(
+      hour: min ~/ 60,
+      minute: min % 60,
+    );
+  }
+
+  String formatTimeRange(int startMin, int endMin) {
+    final start = minToTime(startMin);
+    final end = minToTime(endMin);
+
+    final startFormatted = start.format(context);
+    final endFormatted = end.format(context);
+
+    return "$startFormatted - $endFormatted";
   }
 
   @override

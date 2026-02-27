@@ -4,16 +4,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import './resourcely_colors.dart';
 import 'package:rxdart/rxdart.dart';
 
-
-class MyBookingsPage extends StatelessWidget {
+class MyBookingsPage extends StatefulWidget {
   const MyBookingsPage({super.key});
+
+  @override
+  State<MyBookingsPage> createState() => _MyBookingsPageState();
+}
+
+class _MyBookingsPageState extends State<MyBookingsPage> {
+
+  @override
+  void initState() {
+    super.initState();
+    autoCompleteExpiredBookings();
+  }
 
   /// Convert minutes → TimeOfDay
   TimeOfDay minToTime(int min) {
     return TimeOfDay(hour: min ~/ 60, minute: min % 60);
   }
 
-  /// Parse "2:30 PM" safely
+  /// Parse "2:30 PM"
   DateTime parseStringTime(DateTime date, String timeString) {
     final parts = timeString.split(' ');
     final hm = parts[0].split(':');
@@ -31,7 +42,7 @@ class MyBookingsPage extends StatelessWidget {
     return DateTime(date.year, date.month, date.day, hour, minute);
   }
 
-  /// Build booking END DateTime safely
+  /// Build END DateTime
   DateTime buildEndDateTime(DateTime date, dynamic endTime) {
     if (endTime == null) return date;
 
@@ -45,6 +56,34 @@ class MyBookingsPage extends StatelessWidget {
     }
 
     return date;
+  }
+
+  /// 🔥 AUTO COMPLETE
+  Future<void> autoCompleteExpiredBookings() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final nowMinutes = now.hour * 60 + now.minute;
+
+    final snap = await FirebaseFirestore.instance
+        .collection('bookings')
+        .where('status', whereIn: ['booked', 'active'])
+        .get();
+
+    for (var doc in snap.docs) {
+      final date = (doc['date'] as Timestamp).toDate();
+      final bookingDate =
+      DateTime(date.year, date.month, date.day);
+      final endMin = doc['endMin'];
+
+      if (bookingDate.isBefore(today) ||
+          (bookingDate.isAtSameMomentAs(today) &&
+              endMin <= nowMinutes)) {
+        await doc.reference.update({
+          'status': 'completed',
+          'completedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    }
   }
 
   /// Cancel booking
@@ -98,13 +137,13 @@ class MyBookingsPage extends StatelessWidget {
             children: [
               if (upcoming.isNotEmpty) ...[
                 _sectionTitle("Upcoming"),
-                ...upcoming
-                    .map((b) => _bookingCard(context, b, isUpcoming: true)),
+                ...upcoming.map(
+                        (b) => _bookingCard(context, b, isUpcoming: true)),
               ],
               if (past.isNotEmpty) ...[
                 _sectionTitle("Past"),
-                ...past
-                    .map((b) => _bookingCard(context, b, isUpcoming: false)),
+                ...past.map(
+                        (b) => _bookingCard(context, b, isUpcoming: false)),
               ],
             ],
           );
@@ -113,7 +152,7 @@ class MyBookingsPage extends StatelessWidget {
     );
   }
 
-  /// Properly merge Facility + PC bookings streams
+  /// Merge streams
   Stream<List<Map<String, dynamic>>> _mergedBookings(
       String uid, BuildContext context) {
 
@@ -137,18 +176,19 @@ class MyBookingsPage extends StatelessWidget {
 
         final List<Map<String, dynamic>> merged = [];
 
-        /// Facility bookings
         for (var d in facilitySnap.docs) {
           final data = d.data();
           if (data['date'] == null) continue;
 
           final date = (data['date'] as Timestamp).toDate();
-          final endDT = buildEndDateTime(date, data['endMin']);
+          final endDT =
+          buildEndDateTime(date, data['endMin']);
 
           merged.add({
             'id': d.id,
             'collection': 'bookings',
-            'title': data['facilityId']?.toString().toUpperCase() ?? '',
+            'title':
+            data['facilityId']?.toString().toUpperCase() ?? '',
             'date': date,
             'time':
             "${minToTime(data['startMin']).format(context)} - ${minToTime(data['endMin']).format(context)}",
@@ -157,35 +197,34 @@ class MyBookingsPage extends StatelessWidget {
           });
         }
 
-        /// PC bookings
         for (var d in pcSnap.docs) {
           final data = d.data();
           if (data['date'] == null) continue;
 
           final date = (data['date'] as Timestamp).toDate();
-          final endDT = buildEndDateTime(date, data['endTime']);
+          final endDT =
+          buildEndDateTime(date, data['endTime']);
 
           merged.add({
             'id': d.id,
             'collection': 'PcRoom',
             'title': "PC ${data['pcnumber'] ?? ''}",
             'date': date,
-            'time': "${data['startTime']} - ${data['endTime']}",
+            'time':
+            "${data['startTime']} - ${data['endTime']}",
             'status': data['status'] ?? 'active',
             'endDateTime': endDT,
           });
         }
 
-        merged.sort(
-                (a, b) => b['endDateTime'].compareTo(a['endDateTime']));
+        merged.sort((a, b) =>
+            b['endDateTime'].compareTo(a['endDateTime']));
 
         return merged;
       },
     );
   }
 
-
-  /// Section title
   Widget _sectionTitle(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -199,7 +238,6 @@ class MyBookingsPage extends StatelessWidget {
     );
   }
 
-  /// Booking Card
   Widget _bookingCard(
       BuildContext context,
       Map<String, dynamic> b, {
@@ -229,8 +267,8 @@ class MyBookingsPage extends StatelessWidget {
         ),
         trailing: isUpcoming
             ? IconButton(
-          icon:
-          const Icon(Icons.cancel, color: Colors.red),
+          icon: const Icon(Icons.cancel,
+              color: Colors.red),
           onPressed: () =>
               cancelBooking(b['collection'], b['id']),
         )

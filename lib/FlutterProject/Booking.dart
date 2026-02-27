@@ -23,35 +23,9 @@ class _BookingState extends State<Booking> {
   void initState() {
     super.initState();
     _loadBlockedDates();
-    autoCompleteExpiredBookings(); // 🔥 new
+
   }
 
-  /// 🔥 AUTO COMPLETE EXPIRED BOOKINGS
-  Future<void> autoCompleteExpiredBookings() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final nowMinutes = now.hour * 60 + now.minute;
-
-    final snap = await FirebaseFirestore.instance
-        .collection('bookings')
-        .where('status', isEqualTo: 'active')
-        .get();
-
-    for (var doc in snap.docs) {
-      final date = (doc['date'] as Timestamp).toDate();
-      final bookingDate =
-      DateTime(date.year, date.month, date.day);
-      final endMin = doc['endMin'];
-
-      if (bookingDate.isBefore(today) ||
-          (bookingDate == today && endMin <= nowMinutes)) {
-        await doc.reference.update({
-          'status': 'completed',
-          'completedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    }
-  }
 
   Future<void> _loadBlockedDates() async {
     final snap = await FirebaseFirestore.instance
@@ -234,7 +208,7 @@ class _BookingState extends State<Booking> {
         .where('facilityId', isEqualTo: widget.facilityId)
         .where('userId', isEqualTo: user.uid)
         .where('date', isEqualTo: selectedDateTs)
-        .where('status', isEqualTo: 'active')
+        .where('status', whereIn: ['booked', 'active'])
         .get();
 
     if (userBookingSnap.docs.isNotEmpty) {
@@ -247,7 +221,7 @@ class _BookingState extends State<Booking> {
     final facilitySnap = await bookingsRef
         .where('facilityId', isEqualTo: widget.facilityId)
         .where('date', isEqualTo: selectedDateTs)
-        .where('status', isEqualTo: 'active')
+        .where('status', whereIn: ['booked', 'active'])
         .get();
 
     for (var doc in facilitySnap.docs) {
@@ -280,15 +254,17 @@ class _BookingState extends State<Booking> {
     await bookingsRef.add({
       'facilityId': widget.facilityId,
       'userId': user.uid,
+      'user_email': user.email ?? '',
       'date': selectedDateTs,
       'startMin': newStart,
       'endMin': newEnd,
-      'status': 'active',
+      'status': 'booked',
       'createdAt': FieldValue.serverTimestamp(),
       'completedAt': null,
     });
 
     setState(() => isLoading = false);
+
     _showMsg("Booking confirmed 🎉");
     Navigator.pop(context);
   }
@@ -301,7 +277,7 @@ class _BookingState extends State<Booking> {
             .collection('bookings')
             .where('facilityId', isEqualTo: widget.facilityId)
             .where('date', isEqualTo: selectedDateTs)
-            .where('status', isEqualTo: 'active') // ✅ FIXED
+            .where('status', whereIn: ['booked', 'active']) // ✅ FIXED
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const SizedBox();
@@ -350,7 +326,7 @@ class _BookingState extends State<Booking> {
   void _showMsg(String msg) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(msg),
-      backgroundColor: Colors.red,
+      backgroundColor: msg=="Booking confirmed 🎉"?Colors.green:Colors.red,
       behavior: SnackBarBehavior.floating,)
     );
   }
