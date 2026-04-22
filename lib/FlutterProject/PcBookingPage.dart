@@ -961,9 +961,9 @@ class _PcbookingpageState extends State<Pcbookingpage> {
                       );
 
                       Timer(Duration(seconds: 3), () {
-                        Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => Homepage()));
+                       Navigator.pop(context);
+                       Navigator.pop(context);
+                       Navigator.pop(context);
                       });
 
                     } catch (e) {
